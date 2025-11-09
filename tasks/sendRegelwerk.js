@@ -1,20 +1,86 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const { regelwerk } = require('../config/ids');
 
-function buildVerifyButton() {
-  const verifyCustomId = regelwerk?.verifyCustomId ?? 'verify_user';
+function getVerifyCustomId() {
+  return regelwerk?.verifyCustomId ?? 'verify_user';
+}
 
-  return new ButtonBuilder()
+function getVerifyEmoji() {
+  return regelwerk?.verifyEmoji ?? '<a:yes:1437026086683803679>';
+}
+
+function buildVerifyButton() {
+  const verifyCustomId = getVerifyCustomId();
+  const verifyEmoji = getVerifyEmoji();
+
+  const button = new ButtonBuilder()
     .setCustomId(verifyCustomId)
     .setLabel('Verifizieren')
-    .setEmoji('<a:yes:1437026086683803679>')
     .setStyle(ButtonStyle.Success);
+
+  if (verifyEmoji) {
+    button.setEmoji(verifyEmoji);
+  }
+
+  return button;
 }
 
 function buildRegelwerkComponents() {
   const verifyButton = buildVerifyButton();
 
   return [new ActionRowBuilder().addComponents(verifyButton)];
+}
+
+function ensureVerifyComponents(existingComponents = []) {
+  const verifyCustomId = getVerifyCustomId();
+  const verifyButton = buildVerifyButton();
+
+  const resolvedRows = [];
+  let verifyButtonPresent = false;
+
+  for (const row of existingComponents) {
+    if (!row) {
+      continue;
+    }
+
+    let rowBuilder;
+    try {
+      rowBuilder = ActionRowBuilder.from(row);
+    } catch (error) {
+      console.error('Regelwerk: Bestehende Komponenten konnten nicht übernommen werden:', error);
+      continue;
+    }
+
+    const newRow = new ActionRowBuilder();
+
+    for (const component of rowBuilder.components ?? []) {
+      if (!component) {
+        continue;
+      }
+
+      const customId =
+        typeof component.customId === 'string'
+          ? component.customId
+          : component.data?.custom_id;
+
+      if (customId === verifyCustomId) {
+        verifyButtonPresent = true;
+        newRow.addComponents(verifyButton);
+      } else {
+        newRow.addComponents(component);
+      }
+    }
+
+    if (newRow.components.length > 0) {
+      resolvedRows.push(newRow);
+    }
+  }
+
+  if (!verifyButtonPresent) {
+    resolvedRows.push(new ActionRowBuilder().addComponents(verifyButton));
+  }
+
+  return resolvedRows;
 }
 
 function buildRegelwerkEmbed() {
@@ -133,7 +199,16 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
 
   try {
     const existingMessage = await channel.messages.fetch(regelwerkMessageId);
-    const updatedMessage = await existingMessage.edit({ embeds: [embed], components });
+    const existingEmbeds =
+      existingMessage?.embeds?.length > 0
+        ? existingMessage.embeds.map((existingEmbed) => EmbedBuilder.from(existingEmbed))
+        : [embed];
+    const existingComponents = ensureVerifyComponents(existingMessage?.components ?? []);
+
+    const updatedMessage = await existingMessage.edit({
+      embeds: existingEmbeds,
+      components: existingComponents.length > 0 ? existingComponents : components,
+    });
     console.info(`Regelwerk-Nachricht ${regelwerkMessageId} wurde aktualisiert.`);
     return updatedMessage;
   } catch (error) {
