@@ -1,16 +1,15 @@
-const CATEGORY_ID = '1437044994471886908';
-const CHANNEL_CONFIG = [
-  { id: '1437045028127117333', label: 'Mitglieder' },
-  { id: '1437045058162528317', label: 'Online' },
-  { id: '1437045090442022933', label: 'Boosts' },
-];
+const { stats } = require('../config/ids');
+
+const CATEGORY_ID = stats?.categoryId;
+const CHANNEL_CONFIG = Object.values(stats?.channels ?? {});
 
 const DEFAULT_INTERVAL_MS = 60_000;
-const DEFAULT_STATS = {
-  Mitglieder: 123,
-  Online: 45,
-  Boosts: 7,
-};
+const DEFAULT_STATS = CHANNEL_CONFIG.reduce((accumulator, { label }) => {
+  if (label) {
+    accumulator[label] = 0;
+  }
+  return accumulator;
+}, {});
 
 let lastKnownStats = { ...DEFAULT_STATS };
 
@@ -37,6 +36,10 @@ async function fetchGuild(client, guildId) {
 }
 
 async function resolveChannel(guild, channelId) {
+  if (!channelId) {
+    throw new Error('Channel ID is missing in the stats configuration.');
+  }
+
   const cachedChannel = guild.channels.cache.get(channelId);
   if (cachedChannel) {
     return cachedChannel;
@@ -50,6 +53,10 @@ async function resolveChannel(guild, channelId) {
 }
 
 async function updateVoiceChannelName(channel, label, value) {
+  if (!channel || typeof channel.setName !== 'function') {
+    return;
+  }
+
   const nextName = `${label}: ${value}`;
   if (channel.name === nextName) {
     return;
@@ -58,7 +65,7 @@ async function updateVoiceChannelName(channel, label, value) {
   try {
     await channel.setName(nextName);
   } catch (error) {
-    console.error(`Failed to set channel name for ${channel.id}:`, error);
+    console.error(`Failed to set channel name for ${channel?.id ?? 'unknown'}:`, error);
   }
 }
 
@@ -67,24 +74,30 @@ async function computeStats(guild) {
 
   try {
     await guild.members.fetch({ withPresences: true });
-    stats.Mitglieder = guild.memberCount;
+    if ('Mitglieder' in stats) {
+      stats.Mitglieder = guild.memberCount;
+    }
   } catch (error) {
     console.error('Failed to fetch guild members:', error);
   }
 
   try {
-    const onlineCount = guild.members.cache.filter((member) => {
-      const status = member.presence?.status;
-      return typeof status === 'string' && status !== 'offline';
-    }).size;
+    if ('Online' in stats) {
+      const onlineCount = guild.members.cache.filter((member) => {
+        const status = member.presence?.status;
+        return typeof status === 'string' && status !== 'offline';
+      }).size;
 
-    stats.Online = onlineCount;
+      stats.Online = onlineCount;
+    }
   } catch (error) {
     console.error('Failed to compute online members:', error);
   }
 
   try {
-    stats.Boosts = guild.premiumSubscriptionCount ?? stats.Boosts;
+    if ('Boosts' in stats) {
+      stats.Boosts = guild.premiumSubscriptionCount ?? stats.Boosts;
+    }
   } catch (error) {
     console.error('Failed to determine boost count:', error);
   }
@@ -94,6 +107,11 @@ async function computeStats(guild) {
 }
 
 async function updateGuildStats(client, guildId) {
+  if (!CATEGORY_ID || CHANNEL_CONFIG.length === 0) {
+    console.warn('Stats configuration is incomplete. Skipping stats update.');
+    return;
+  }
+
   try {
     const guild = await fetchGuild(client, guildId);
 
@@ -101,6 +119,10 @@ async function updateGuildStats(client, guildId) {
 
     await Promise.all(
       CHANNEL_CONFIG.map(async ({ id, label }) => {
+        if (!id || !label) {
+          return;
+        }
+
         try {
           const channel = await resolveChannel(guild, id);
           if (!channel || channel.parentId !== CATEGORY_ID) {
