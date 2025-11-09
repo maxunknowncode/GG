@@ -6,6 +6,13 @@ const CHANNEL_CONFIG = [
 ];
 
 const DEFAULT_INTERVAL_MS = 60_000;
+const DEFAULT_STATS = {
+  Mitglieder: 123,
+  Online: 45,
+  Boosts: 7,
+};
+
+let lastKnownStats = { ...DEFAULT_STATS };
 
 async function fetchGuild(client, guildId) {
   if (!guildId) {
@@ -56,25 +63,34 @@ async function updateVoiceChannelName(channel, label, value) {
 }
 
 async function computeStats(guild) {
-  const members = await guild.members
-    .fetch({ withPresences: true })
-    .then(() => guild.memberCount)
-    .catch((error) => {
-      throw new Error(`Failed to fetch guild members: ${error.message}`);
-    });
+  const stats = { ...lastKnownStats };
 
-  const boosts = guild.premiumSubscriptionCount ?? 0;
+  try {
+    await guild.members.fetch({ withPresences: true });
+    stats.Mitglieder = guild.memberCount;
+  } catch (error) {
+    console.error('Failed to fetch guild members:', error);
+  }
 
-  const onlineCount = guild.members.cache.filter((member) => {
-    const status = member.presence?.status;
-    return typeof status === 'string' && status !== 'offline';
-  }).size;
+  try {
+    const onlineCount = guild.members.cache.filter((member) => {
+      const status = member.presence?.status;
+      return typeof status === 'string' && status !== 'offline';
+    }).size;
 
-  return {
-    Mitglieder: members,
-    Online: onlineCount,
-    Boosts: boosts,
-  };
+    stats.Online = onlineCount;
+  } catch (error) {
+    console.error('Failed to compute online members:', error);
+  }
+
+  try {
+    stats.Boosts = guild.premiumSubscriptionCount ?? stats.Boosts;
+  } catch (error) {
+    console.error('Failed to determine boost count:', error);
+  }
+
+  lastKnownStats = stats;
+  return stats;
 }
 
 async function updateGuildStats(client, guildId) {
@@ -106,11 +122,34 @@ async function updateGuildStats(client, guildId) {
 function startStatsUpdater(client, options = {}) {
   const guildId = process.env.GUILD_ID;
   const interval = Number(options.interval ?? process.env.STATS_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
+  const resolvedInterval = Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_INTERVAL_MS;
+  let isRunning = false;
 
-  const runUpdate = () => updateGuildStats(client, guildId);
+  const runUpdate = async () => {
+    if (isRunning) {
+      console.warn('Stats update skipped because previous run is still in progress.');
+      return;
+    }
 
-  runUpdate();
-  return setInterval(runUpdate, interval);
+    isRunning = true;
+    try {
+      await updateGuildStats(client, guildId);
+    } catch (error) {
+      console.error('Unexpected error during stats update:', error);
+    } finally {
+      isRunning = false;
+    }
+  };
+
+  runUpdate().catch((error) => {
+    console.error('Initial stats update failed:', error);
+  });
+
+  return setInterval(() => {
+    runUpdate().catch((error) => {
+      console.error('Scheduled stats update failed:', error);
+    });
+  }, resolvedInterval);
 }
 
 module.exports = {
