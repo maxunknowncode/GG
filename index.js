@@ -6,6 +6,7 @@ const {
 const { startStatsUpdater } = require('./tasks/updateStats');
 const { sendRegelwerk } = require('./tasks/sendRegelwerk');
 const { ensureTicketEnvironment, setupTicketSystem } = require('./modules/tickets');
+const { ensureInvitationMessage, setupInvitationModule } = require('./modules/invitations');
 
 const REQUIRED_INTENTS = [
   GatewayIntentBits.Guilds,
@@ -22,6 +23,7 @@ const client = new Client({
 });
 
 setupTicketSystem(client);
+setupInvitationModule(client);
 
 client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);
@@ -39,6 +41,13 @@ client.once('ready', async () => {
     console.log('Regelwerk wurde erfolgreich gesendet.');
   } catch (error) {
     console.error('Senden des Regelwerks beim Start fehlgeschlagen:', error);
+  }
+
+  try {
+    await ensureInvitationMessage(client);
+    console.log('Einladungsnachricht wurde erfolgreich gesendet oder aktualisiert.');
+  } catch (error) {
+    console.error('Einladungsnachricht konnte nicht verarbeitet werden:', error);
   }
 });
 
