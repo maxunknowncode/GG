@@ -1,19 +1,38 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+} = require('discord.js');
 const { startStatsUpdater } = require('./tasks/updateStats');
 const { sendRegelwerk } = require('./tasks/sendRegelwerk');
+const { ensureTicketEnvironment, setupTicketSystem } = require('./modules/tickets');
+
+const REQUIRED_INTENTS = [
+  GatewayIntentBits.Guilds,
+  GatewayIntentBits.GuildMembers,
+  GatewayIntentBits.GuildPresences,
+  GatewayIntentBits.GuildMessages,
+  GatewayIntentBits.MessageContent,
+];
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences,
-  ],
+  intents: REQUIRED_INTENTS,
+  partials: [Partials.Channel, Partials.Message, Partials.GuildMember],
   retryLimit: 2,
 });
+
+setupTicketSystem(client);
 
 client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);
   startStatsUpdater(client);
+
+  try {
+    await ensureTicketEnvironment(client);
+    console.log('Ticket-System erfolgreich initialisiert.');
+  } catch (error) {
+    console.error('Ticket-System konnte nicht vollständig initialisiert werden:', error);
+  }
 
   try {
     await sendRegelwerk(client, { replaceExisting: true });
@@ -47,7 +66,89 @@ process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error);
 });
 
-client.login(process.env.TOKEN).catch((error) => {
-  console.error('Fehler beim Login:', error);
-  process.exit(1);
+let loginInProgress = false;
+let loginCompleted = false;
+
+function shouldRetryLogin(error) {
+  if (!error) {
+    return true;
+  }
+
+  const fatalCodes = new Set(['TokenInvalid', 'TOKEN_INVALID']);
+  if (fatalCodes.has(error.code) || error.httpStatus === 401) {
+    return false;
+  }
+
+  const message = String(error.message ?? '').toUpperCase();
+  if (message.includes('TOKEN INVALID') || message.includes('INVALID TOKEN')) {
+    return false;
+  }
+
+  return true;
+}
+
+async function loginWithRetry(token, maxAttempts = 5) {
+  let attempt = 0;
+  let lastError = null;
+
+  while (attempt < maxAttempts) {
+    attempt += 1;
+    try {
+      await client.login(token);
+      loginCompleted = true;
+      return;
+    } catch (error) {
+      lastError = error;
+      console.error(`Login attempt ${attempt} failed:`, error);
+
+      if (!shouldRetryLogin(error) || attempt >= maxAttempts) {
+        throw error;
+      }
+
+      const waitTime = Math.min(30_000, 2 ** attempt * 1_000);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+}
+
+async function ensureLoggedIn() {
+  if (loginInProgress || loginCompleted) {
+    return;
+  }
+
+  loginInProgress = true;
+
+  const token = process.env.TOKEN;
+  if (!token) {
+    console.error('TOKEN is not defined in environment variables.');
+    loginInProgress = false;
+    return;
+  }
+
+  try {
+    await loginWithRetry(token);
+  } catch (error) {
+    if (shouldRetryLogin(error)) {
+      console.error('Login failed after multiple attempts. Retrying in 60 seconds.');
+      setTimeout(() => {
+        loginInProgress = false;
+        ensureLoggedIn().catch((retryError) => {
+          console.error('Retrying login failed:', retryError);
+        });
+      }, 60_000);
+      return;
+    }
+
+    console.error('Login failed due to a fatal error. Please check the token configuration.');
+  } finally {
+    loginInProgress = false;
+  }
+}
+
+ensureLoggedIn().catch((error) => {
+  console.error('Failed to initiate login process:', error);
 });
