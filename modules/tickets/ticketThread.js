@@ -1,11 +1,5 @@
-const {
-  ChannelType,
-  PermissionFlagsBits,
-  ThreadAutoArchiveDuration,
-} = require('discord.js');
-const { tickets, roles } = require('../../config/ids');
-
-const WAIT_AFTER_CHANNEL_MS = 500;
+const { ChannelType, ThreadAutoArchiveDuration } = require('discord.js');
+const { tickets } = require('../../config/ids');
 const THREAD_STATE_REGEX = /^\[(?<state>[^\]]+)]\s*/i;
 const THREAD_NAME_REGEX = /^(?<type>[a-z0-9-]+)-(?<number>\d{3,})$/i;
 const LEGACY_THREAD_NAME_REGEX = /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
@@ -179,19 +173,6 @@ async function ensureTicketChannel(guild, option) {
     throw new Error('Missing guild or ticket option to ensure ticket channel.');
   }
 
-  const openCategoryId = tickets?.openCategoryId;
-  if (!openCategoryId) {
-    throw new Error('Open ticket category ID is not configured.');
-  }
-
-  const everyoneRole = guild.roles.everyone;
-  const teamRoleId = roles?.team;
-  const botMember = guild.members.me;
-
-  if (!botMember) {
-    throw new Error('Bot member is not available in the guild.');
-  }
-
   let channel = null;
 
   if (option.channelId) {
@@ -223,99 +204,8 @@ async function ensureTicketChannel(guild, option) {
     );
   }
 
-  if (!channel) {
-    try {
-      const overwrites = [
-        {
-          id: everyoneRole.id,
-          deny: [PermissionFlagsBits.ViewChannel],
-        },
-      ];
-
-      if (teamRoleId) {
-        overwrites.push({
-          id: teamRoleId,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.ManageThreads,
-          ],
-        });
-      }
-
-      overwrites.push({
-        id: botMember.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.SendMessagesInThreads,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.ManageThreads,
-          PermissionFlagsBits.CreatePrivateThreads,
-          PermissionFlagsBits.ManageMessages,
-        ],
-      });
-
-      channel = await guild.channels.create({
-        name: option.channelName,
-        type: ChannelType.GuildText,
-        parent: openCategoryId,
-        reason: `Ticket channel for ${option.key}`,
-        permissionOverwrites: overwrites,
-      });
-
-      await delay(WAIT_AFTER_CHANNEL_MS);
-    } catch (error) {
-      console.error(`Failed to create ticket channel ${option.channelName}:`, error);
-      throw error;
-    }
-  } else {
-    const overwrites = [];
-
-    if (channel.parentId !== openCategoryId) {
-      try {
-        await channel.setParent(openCategoryId, { lockPermissions: false });
-      } catch (error) {
-        console.error(`Failed to move channel ${channel.id} to open category:`, error);
-      }
-    }
-
-    try {
-      overwrites.push({
-        id: everyoneRole.id,
-        deny: [PermissionFlagsBits.ViewChannel],
-      });
-
-      if (teamRoleId) {
-        overwrites.push({
-          id: teamRoleId,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.ManageThreads,
-          ],
-        });
-      }
-
-      overwrites.push({
-        id: botMember.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.SendMessagesInThreads,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.ManageThreads,
-          PermissionFlagsBits.CreatePrivateThreads,
-          PermissionFlagsBits.ManageMessages,
-        ],
-      });
-
-      await channel.permissionOverwrites.set(overwrites);
-    } catch (error) {
-      console.error(`Failed to sync permission overwrites for ${channel.id}:`, error);
-    }
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    throw new Error(`Ticket channel for ${option.key} could not be located or is not a text channel.`);
   }
 
   return channel;
