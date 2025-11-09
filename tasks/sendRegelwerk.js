@@ -1,52 +1,72 @@
 const { EmbedBuilder } = require('discord.js');
 const {
-  regelwerkCategoryId,
-  regelwerkChannelId,
-  regelwerkMessageId,
-} = require('../config/regelwerk');
+  regelwerk: { category: regelwerkCategoryId, channel: regelwerkChannelId, messageId: regelwerkMessageId },
+} = require('../config/ids');
 
 function buildRegelwerkEmbed() {
-  const description = [
-    '**📜 Serverregelwerk**',
-    '',
-    '****1. Allgemeines Verhalten****',
-    '🚫 *Beleidigungen, Diskriminierung und toxisches Verhalten sind untersagt.*',
-    '✅ Begegne allen Mitgliedern mit Respekt – egal welcher Meinung, Herkunft oder Rolle.',
-    '',
-    '****2. Sprache & Inhalte****',
-    '🔞 NSFW-Inhalte, Gewaltverherrlichung oder illegales Material sind verboten.',
-    '🗣️ Vermeide **Dauer-Capslock**, Spam und übermäßigen Emoji-Gebrauch.',
-    '',
-    '****3. Werbung & Eigenpromotion****',
-    '📢 *Jegliche Werbung ohne ausdrückliche Genehmigung ist untersagt.*',
-    'Dazu zählen: Discord-Links, YouTube, Twitch, Instagram usw.',
-    '💡 Im Zweifel erst das Team fragen.',
-    '',
-    '****4. Nicknamen & Profilbilder****',
-    '👤 Anstößige Namen oder Bilder sind nicht erlaubt.',
-    'Nicknames sollen **lesbar** und **nicht provozierend** sein.',
-    '',
-    '****5. Voice-Verhalten****',
-    '🎧 Kein Stören mit Soundboards, Störgeräuschen oder lautem Verhalten.',
-    '🎙️ Push-to-Talk bei Hintergrundgeräuschen wird empfohlen.',
-    '',
-    '****6. Teamrespekt****',
-    '🛡️ *Folge jederzeit den Anweisungen des Serverteams.*',
-    'Fragen oder Beschwerden bitte sachlich per Ticket klären.',
-    '',
-    '****7. Sanktionen****',
-    '⚠️ Bei **Verstößen** erfolgen Verwarnungen, Timeouts oder Bans.',
-    '🔁 **Wiederholte Verstöße** führen zu **permanentem Ausschluss** ohne weitere Warnung.',
-    '',
-    '────────────────────────────',
-    '',
-    'Durch deine Nutzung dieses Servers akzeptierst du die offiziellen Discord-Richtlinien:',
-    '🔗 [https://discord.com/guidelines](https://discord.com/guidelines)',
-  ].join('\n');
+  const fields = [
+    {
+      name: '__**1. Allgemeines Verhalten**__',
+      value: [
+        '> 🚫 Beleidigungen, Diskriminierung und toxisches Verhalten sind untersagt.',
+        '> ✅ Begegne allen Mitgliedern mit Respekt – unabhängig von Meinung, Herkunft oder Rolle.',
+      ].join('\n'),
+    },
+    {
+      name: '__**2. Sprache & Inhalte**__',
+      value: [
+        '> 🔞 NSFW-Inhalte, Gewaltverherrlichung oder illegales Material sind verboten.',
+        '> 🗣️ Vermeide Dauer-Capslock, Spam und übermäßigen Emoji-Gebrauch.',
+      ].join('\n'),
+    },
+    {
+      name: '__**3. Werbung & Eigenpromotion**__',
+      value: [
+        '> 📢 Jegliche Werbung ohne ausdrückliche Genehmigung ist untersagt.',
+        '> 💡 Frag im Zweifel zuerst das Team, bevor du Links oder Eigenpromotion teilst.',
+      ].join('\n'),
+    },
+    {
+      name: '__**4. Nicknamen & Profilbilder**__',
+      value: [
+        '> 👤 Anstößige oder provozierende Namen und Profilbilder sind nicht erlaubt.',
+        '> 🔤 Wähle einen gut lesbaren Nicknamen, der zum Server passt.',
+      ].join('\n'),
+    },
+    {
+      name: '__**5. Voice-Verhalten**__',
+      value: [
+        '> 🎧 Vermeide Störgeräusche, Soundboards oder dauerhaft lautes Verhalten.',
+        '> 🎙️ Nutze Push-to-Talk, wenn Hintergrundgeräusche nicht vermieden werden können.',
+      ].join('\n'),
+    },
+    {
+      name: '__**6. Teamrespekt**__',
+      value: [
+        '> 🛡️ Folge jederzeit den Anweisungen des Serverteams.',
+        '> 📩 Kläre Fragen oder Beschwerden sachlich über Tickets oder Direktnachrichten.',
+      ].join('\n'),
+    },
+    {
+      name: '__**7. Sanktionen**__',
+      value: [
+        '> ⚠️ Verstöße führen zu Verwarnungen, Timeouts oder Bans.',
+        '> 🔁 Wiederholte Verstöße können einen dauerhaften Ausschluss nach sich ziehen.',
+      ].join('\n'),
+    },
+    {
+      name: '__**Offizielle Richtlinien**__',
+      value: '> 🔗 https://discord.com/guidelines',
+    },
+  ];
 
   return new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setDescription(description)
+    .setColor(0x8b0000)
+    .setTitle('📜 Serverregelwerk')
+    .setFields(fields)
+    .setFooter({
+      text: 'Durch die Nutzung dieses Servers akzeptierst du die Discord-Richtlinien.',
+    })
     .setTimestamp();
 }
 
