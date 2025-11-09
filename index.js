@@ -16,7 +16,7 @@ client.once('ready', async () => {
   startStatsUpdater(client);
 
   try {
-    await sendRegelwerk(client);
+    await sendRegelwerk(client, { replaceExisting: true });
     console.log('Regelwerk wurde erfolgreich gesendet.');
   } catch (error) {
     console.error('Senden des Regelwerks beim Start fehlgeschlagen:', error);
