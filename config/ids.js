@@ -29,7 +29,8 @@ module.exports = {
     options: [
       {
         key: 'support',
-        value: '1437090552964448296',
+        value: 'support',
+        channelId: '1437090552964448296',
         emoji: '🛠️',
         label: 'Support',
         description: 'Allgemeine Hilfe oder technische Probleme rund um den Server',
@@ -38,7 +39,8 @@ module.exports = {
       },
       {
         key: 'bewerbung',
-        value: '1437090579510071418',
+        value: 'bewerbung',
+        channelId: '1437090579510071418',
         emoji: '📩',
         label: 'Bewerbung',
         description: 'Anfrage zur Mitarbeit im Team (z. B. Mod, Support, Creator)',
@@ -47,7 +49,8 @@ module.exports = {
       },
       {
         key: 'melden',
-        value: '1437090599902904471',
+        value: 'melden',
+        channelId: '1437090599902904471',
         emoji: '⚠️',
         label: 'Melden',
         description: 'Nutzerverhalten, Regelverstöße oder andere Zwischenfälle',
@@ -56,7 +59,8 @@ module.exports = {
       },
       {
         key: 'privat',
-        value: '1437090624624005271',
+        value: 'privat',
+        channelId: '1437090624624005271',
         emoji: '🔒',
         label: 'Privates Anliegen',
         description: 'Vertrauliche Themen, Beschwerden oder sensible Fragen an die Serverleitung',

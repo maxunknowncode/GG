@@ -173,11 +173,36 @@ async function ensureTicketChannel(guild, option) {
     throw new Error('Bot member is not available in the guild.');
   }
 
-  let channel = guild.channels.cache.find(
-    (existingChannel) =>
-      existingChannel.type === ChannelType.GuildText &&
-      existingChannel.name === option.channelName,
-  );
+  let channel = null;
+
+  if (option.channelId) {
+    channel = guild.channels.cache.get(option.channelId) ?? null;
+
+    if (!channel) {
+      try {
+        channel = (await guild.channels.fetch(option.channelId)) ?? null;
+      } catch (error) {
+        console.warn(
+          `Configured ticket channel ${option.channelId} for ${option.key} could not be fetched:`,
+          error,
+        );
+      }
+    }
+  }
+
+  if (channel && channel.type !== ChannelType.GuildText) {
+    console.error(
+      `Configured ticket channel ${channel.id} for ${option.key} is not a text channel. A fallback channel will be used.`,
+    );
+    channel = null;
+  }
+
+  if (!channel) {
+    channel = guild.channels.cache.find(
+      (existingChannel) =>
+        existingChannel.type === ChannelType.GuildText && existingChannel.name === option.channelName,
+    );
+  }
 
   if (!channel) {
     try {
