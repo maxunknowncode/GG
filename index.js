@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { startStatsUpdater } = require('./tasks/updateStats');
+const { sendRegelwerk } = require('./tasks/sendRegelwerk');
 
 const client = new Client({
   intents: [
@@ -10,9 +11,16 @@ const client = new Client({
   retryLimit: 2,
 });
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);
   startStatsUpdater(client);
+
+  try {
+    await sendRegelwerk(client);
+    console.log('Regelwerk wurde erfolgreich gesendet.');
+  } catch (error) {
+    console.error('Senden des Regelwerks beim Start fehlgeschlagen:', error);
+  }
 });
 
 client.on('error', (error) => {
