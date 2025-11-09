@@ -19,6 +19,6 @@ module.exports = {
   regelwerk: {
     category: '1437045325918634094', // Willkommen
     channel: '1437045372089274503',  // regeln
-    messageId: '', // optional, für spätere Aktualisierung
+    messageId: '1437072983704342528', // optional, für spätere Aktualisierung
   },
 };
