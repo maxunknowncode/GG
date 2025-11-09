@@ -31,10 +31,11 @@ module.exports = {
   // Enthält Panel, Kategorien, Custom-IDs und Dropdown-Optionen für das Ticket-System
 
   tickets: {
-    panelCategoryId:  '1437045895676825600', // Kategorie: Ticket & Hilfe (Panel)
-    panelChannelId:   '1437045919534026923', // Text-Channel: #ticket (Panel-Nachricht)
-    openCategoryId:   '1437090088671510528', // Kategorie: Ticket Open (Elternkanäle für Threads)
-    archiveCategoryId:'1437090117927043293', // Kategorie: Ticket Archiv (nur Info, Threads bleiben beim Parent)
+    panelCategoryId:   '1437045895676825600', // Kategorie: Ticket & Hilfe (Panel)
+    panelChannelId:    '1437045919534026923', // Text-Channel: #ticket (Panel-Nachricht)
+    ticketPanelMessageId: '1437100580186357822', // Ticket-Panel-Message-ID (Embed im #ticket-Channel)
+    openCategoryId:    '1437090088671510528', // Kategorie: Ticket Open (Elternkanäle für Threads)
+    archiveCategoryId: '1437090117927043293', // Kategorie: Ticket Archiv (nur Info, Threads bleiben beim Parent)
 
     selectCustomId: 'ticket_select', // Custom-ID: Dropdown-Menü
     closeCustomId:  'ticket_close',  // Custom-ID: Button „Ticket schließen“
