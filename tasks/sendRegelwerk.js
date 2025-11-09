@@ -1,5 +1,21 @@
-const { EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const { regelwerk } = require('../config/ids');
+
+function buildVerifyButton() {
+  const verifyCustomId = regelwerk?.verifyCustomId ?? 'verify_user';
+
+  return new ButtonBuilder()
+    .setCustomId(verifyCustomId)
+    .setLabel('Verifizieren')
+    .setEmoji('<a:yes:1437026086683803679>')
+    .setStyle(ButtonStyle.Success);
+}
+
+function buildRegelwerkComponents() {
+  const verifyButton = buildVerifyButton();
+
+  return [new ActionRowBuilder().addComponents(verifyButton)];
+}
 
 function buildRegelwerkEmbed() {
   const fields = [
@@ -113,9 +129,11 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
 
   const embed = buildRegelwerkEmbed();
 
+  const components = buildRegelwerkComponents();
+
   try {
     const existingMessage = await channel.messages.fetch(regelwerkMessageId);
-    const updatedMessage = await existingMessage.edit({ embeds: [embed] });
+    const updatedMessage = await existingMessage.edit({ embeds: [embed], components });
     console.info(`Regelwerk-Nachricht ${regelwerkMessageId} wurde aktualisiert.`);
     return updatedMessage;
   } catch (error) {
@@ -131,7 +149,7 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
     );
 
     try {
-      const createdMessage = await channel.send({ embeds: [embed] });
+      const createdMessage = await channel.send({ embeds: [embed], components });
       return createdMessage;
     } catch (sendError) {
       throw new Error(`Senden des Regelwerks fehlgeschlagen: ${sendError.message}`);
@@ -142,4 +160,5 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
 module.exports = {
   buildRegelwerkEmbed,
   sendRegelwerk,
+  buildRegelwerkComponents,
 };
