@@ -26,7 +26,7 @@ module.exports = {
 
   einladungen: {
     channel: '1437086163709071471', // Text-Channel: #einladungen
-    messageId: '', // Message-ID der Einladungs-Embed (wird nach Versand ergänzt)
+    messageId: '1437112880876224874', // Message-ID der Einladungs-Embed (wird nach Versand ergänzt)
     inviteLink: 'https://discord.gg/hBP2kBEjaW', // Permanenter Server-Link
   },
 
