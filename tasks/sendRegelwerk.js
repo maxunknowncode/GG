@@ -1,7 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const {
-  regelwerk: { category: regelwerkCategoryId, channel: regelwerkChannelId, messageId: regelwerkMessageId },
-} = require('../config/ids');
+const { regelwerk } = require('../config/ids');
 
 function buildRegelwerkEmbed() {
   const fields = [
@@ -70,9 +68,29 @@ function buildRegelwerkEmbed() {
     .setTimestamp();
 }
 
-async function sendRegelwerk(client) {
+async function sendRegelwerk(client, { replaceExisting = false } = {}) {
   if (!client) {
     throw new Error('Discord client instance is required to send the Regelwerk.');
+  }
+
+  if (!regelwerk) {
+    throw new Error('Die Regelwerk-Konfiguration fehlt in config/ids.js.');
+  }
+
+  const { category: regelwerkCategoryId, channel: regelwerkChannelId, messageId: regelwerkMessageId } = regelwerk;
+
+  if (!replaceExisting) {
+    console.info('Regelwerk-Versand übersprungen, da replaceExisting deaktiviert ist.');
+    return null;
+  }
+
+  if (!regelwerkMessageId) {
+    console.warn('Regelwerk-Versand übersprungen, da keine regelwerk.messageId konfiguriert ist.');
+    return null;
+  }
+
+  if (!regelwerkChannelId) {
+    throw new Error('Regelwerk-Channel-ID fehlt in config/ids.js.');
   }
 
   const channel = client.channels.cache.get(regelwerkChannelId);
@@ -96,17 +114,28 @@ async function sendRegelwerk(client) {
   const embed = buildRegelwerkEmbed();
 
   try {
-    const message = await channel.send({ embeds: [embed] });
+    const existingMessage = await channel.messages.fetch(regelwerkMessageId);
+    const updatedMessage = await existingMessage.edit({ embeds: [embed] });
+    console.info(`Regelwerk-Nachricht ${regelwerkMessageId} wurde aktualisiert.`);
+    return updatedMessage;
+  } catch (error) {
+    const isUnknownMessage =
+      error?.code === 10008 || /Unknown Message/i.test(error?.message ?? '');
 
-    if (regelwerkMessageId) {
-      console.info(
-        `Hinweis: In der Konfiguration ist eine Regelwerk-Nachrichten-ID gesetzt (${regelwerkMessageId}). Aktualisierung bestehender Nachrichten ist noch nicht implementiert.`,
-      );
+    if (!isUnknownMessage) {
+      throw new Error(`Aktualisierung des Regelwerks fehlgeschlagen: ${error.message}`);
     }
 
-    return message;
-  } catch (error) {
-    throw new Error(`Senden des Regelwerks fehlgeschlagen: ${error.message}`);
+    console.warn(
+      `Regelwerk-Nachricht ${regelwerkMessageId} wurde nicht gefunden. Es wird eine neue Nachricht erstellt – bitte die neue ID in config/ids.js hinterlegen.`,
+    );
+
+    try {
+      const createdMessage = await channel.send({ embeds: [embed] });
+      return createdMessage;
+    } catch (sendError) {
+      throw new Error(`Senden des Regelwerks fehlgeschlagen: ${sendError.message}`);
+    }
   }
 }
 
