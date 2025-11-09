@@ -6,9 +6,11 @@ const {
 } = require('discord.js');
 const { tickets, roles } = require('../../config/ids');
 const {
+  clearTicketCreator,
   createTicketThread,
   ensureTicketChannel,
   getNextTicketNumber,
+  getTicketCreatorId,
   initializeTicketCounter,
   isThreadClaimed,
   isThreadClosed,
@@ -245,7 +247,8 @@ async function handleTicketClose(interaction) {
   const member = interaction.member;
   const teamRoleId = roles?.team;
   const hasTeamRole = Boolean(teamRoleId && member?.roles?.cache?.has(teamRoleId));
-  const isCreator = interaction.user.id === parsed.creatorId;
+  const creatorId = await getTicketCreatorId(thread);
+  const isCreator = Boolean(creatorId && interaction.user.id === creatorId);
 
   if (!hasTeamRole && !isCreator) {
     await interaction.reply({
@@ -280,13 +283,17 @@ async function handleTicketClose(interaction) {
     console.error(`Failed to send ticket close notification in thread ${thread.id}:`, error);
   }
 
-  try {
-    await thread.members.remove(parsed.creatorId);
-  } catch (error) {
-    if (error?.code !== 10007) {
-      console.error(`Failed to remove creator ${parsed.creatorId} from thread ${thread.id}:`, error);
+  if (creatorId) {
+    try {
+      await thread.members.remove(creatorId);
+    } catch (error) {
+      if (error?.code !== 10007) {
+        console.error(`Failed to remove creator ${creatorId} from thread ${thread.id}:`, error);
+      }
     }
   }
+
+  clearTicketCreator(thread.id);
 
   const closedName = withThreadState(parsed.baseName, 'CLOSED');
 
