@@ -20,6 +20,15 @@ module.exports = {
     messageId: '1437085174138667089', // Regelwerk-Message-ID (leer lassen, wenn nicht genutzt)
   },
 
+  // IDs // Einladungen
+  // Enthält Channel + optionale Message-ID + permanenten Invite-Link
+
+  einladungen: {
+    channel: '1437086163709071471', // Text-Channel: #einladungen
+    messageId: '', // Message-ID der Einladungs-Embed (wird nach Versand ergänzt)
+    inviteLink: 'https://discord.gg/hBP2kBEjaW', // Permanenter Server-Link
+  },
+
   // IDs // Rollen
   // Enthält wichtige Rollen-IDs
 
