@@ -7,6 +7,7 @@ const { startStatsUpdater } = require('./tasks/updateStats');
 const { sendRegelwerk } = require('./tasks/sendRegelwerk');
 const { ensureTicketEnvironment, setupTicketSystem } = require('./modules/tickets');
 const { ensureInvitationMessage, setupInvitationModule } = require('./modules/invitations');
+const { setupRegelwerkModule } = require('./modules/regelwerk');
 
 const REQUIRED_INTENTS = [
   GatewayIntentBits.Guilds,
@@ -24,6 +25,7 @@ const client = new Client({
 
 setupTicketSystem(client);
 setupInvitationModule(client);
+setupRegelwerkModule(client);
 
 client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);
