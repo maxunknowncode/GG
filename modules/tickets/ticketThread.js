@@ -7,10 +7,12 @@ const { tickets, roles } = require('../../config/ids');
 
 const WAIT_AFTER_CHANNEL_MS = 500;
 const THREAD_STATE_REGEX = /^\[(?<state>[^\]]+)]\s*/i;
-const THREAD_NAME_REGEX = /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
+const THREAD_NAME_REGEX = /^(?<type>[a-z0-9-]+)-(?<number>\d{3,})$/i;
+const LEGACY_THREAD_NAME_REGEX = /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
 
 let ticketCounter = 0;
 let counterInitialized = false;
+const ticketCreators = new Map();
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,24 +29,41 @@ function extractBaseThreadName(name = '') {
 
 function parseThreadName(name = '') {
   const baseName = extractBaseThreadName(name);
-  const match = baseName.match(THREAD_NAME_REGEX);
-  if (!match) {
+  const modernMatch = baseName.match(THREAD_NAME_REGEX);
+
+  if (modernMatch) {
+    const { type, number } = modernMatch.groups;
+    const typeKey = type.toLowerCase();
+    return {
+      baseName,
+      typeKey,
+      channelKey: typeKey,
+      ticketNumber: Number.parseInt(number, 10),
+      creatorId: null,
+      state: extractThreadState(name),
+    };
+  }
+
+  const legacyMatch = baseName.match(LEGACY_THREAD_NAME_REGEX);
+  if (!legacyMatch) {
     return null;
   }
 
-  const { channel, number, userId } = match.groups;
+  const { channel, number, userId } = legacyMatch.groups;
+  const typeKey = channel.toLowerCase();
   return {
     baseName,
-    channelKey: channel.toLowerCase(),
+    typeKey,
+    channelKey: typeKey,
     ticketNumber: Number.parseInt(number, 10),
     creatorId: userId,
     state: extractThreadState(name),
   };
 }
 
-function formatBaseThreadName(channelKey, ticketNumber, creatorId) {
-  const paddedNumber = ticketNumber.toString().padStart(4, '0');
-  return `${channelKey}-${paddedNumber}-u${creatorId}`;
+function formatBaseThreadName(typeKey, ticketNumber) {
+  const paddedNumber = ticketNumber.toString().padStart(3, '0');
+  return `${typeKey}-${paddedNumber}`;
 }
 
 function withThreadState(baseName, state) {
@@ -303,7 +322,10 @@ async function ensureTicketChannel(guild, option) {
 }
 
 async function createTicketThread(channel, option, ticketNumber, creator) {
-  const baseName = formatBaseThreadName(option.channelName, ticketNumber, creator.id);
+  const rawTypeKey = option?.key ?? option?.channelName ?? 'ticket';
+  const sanitizedTypeKey = rawTypeKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const normalizedTypeKey = sanitizedTypeKey.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'ticket';
+  const baseName = formatBaseThreadName(normalizedTypeKey, ticketNumber);
   const threadName = withThreadState(baseName);
 
   try {
@@ -323,6 +345,8 @@ async function createTicketThread(channel, option, ticketNumber, creator) {
       console.error(`Failed to add creator ${creator.id} to thread ${thread.id}:`, memberError);
     }
 
+    ticketCreators.set(thread.id, creator.id);
+
     return { thread, baseName };
   } catch (error) {
     console.error(`Failed to create ticket thread in ${channel.id}:`, error);
@@ -330,12 +354,107 @@ async function createTicketThread(channel, option, ticketNumber, creator) {
   }
 }
 
+function extractUserIdFromString(text = '') {
+  const match = text.match(/<@(?<id>\d{17,})>/);
+  return match?.groups?.id ?? null;
+}
+
+function clearTicketCreator(threadId) {
+  if (!threadId) {
+    return;
+  }
+
+  ticketCreators.delete(threadId);
+}
+
+async function getTicketCreatorId(thread) {
+  if (!thread) {
+    return null;
+  }
+
+  if (ticketCreators.has(thread.id)) {
+    return ticketCreators.get(thread.id) ?? null;
+  }
+
+  const parsed = parseThreadName(thread.name);
+  if (parsed?.creatorId) {
+    ticketCreators.set(thread.id, parsed.creatorId);
+    return parsed.creatorId;
+  }
+
+  try {
+    const starterMessage = await thread.fetchStarterMessage();
+    const starterContentId = extractUserIdFromString(starterMessage?.content ?? '');
+    if (starterContentId) {
+      ticketCreators.set(thread.id, starterContentId);
+      return starterContentId;
+    }
+
+    const starterEmbedId = starterMessage?.embeds
+      ?.map((embed) => extractUserIdFromString(embed?.description ?? ''))
+      .find(Boolean);
+    if (starterEmbedId) {
+      ticketCreators.set(thread.id, starterEmbedId);
+      return starterEmbedId;
+    }
+  } catch (error) {
+    if (error?.code !== 10008) {
+      console.error(`Failed to fetch starter message for thread ${thread.id}:`, error);
+    }
+  }
+
+  try {
+    let before;
+    const maxIterations = 5;
+
+    for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+      const messages = await thread.messages.fetch({ limit: 100, before });
+      if (!messages?.size) {
+        break;
+      }
+
+      const sortedMessages = [...messages.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+      for (const message of sortedMessages) {
+        const contentId = extractUserIdFromString(message?.content ?? '');
+        if (contentId) {
+          ticketCreators.set(thread.id, contentId);
+          return contentId;
+        }
+
+        const embedId = message?.embeds
+          ?.map((embed) => extractUserIdFromString(embed?.description ?? ''))
+          .find(Boolean);
+        if (embedId) {
+          ticketCreators.set(thread.id, embedId);
+          return embedId;
+        }
+      }
+
+      if (messages.size < 100) {
+        break;
+      }
+
+      before = sortedMessages[0]?.id;
+      if (!before) {
+        break;
+      }
+    }
+  } catch (error) {
+    console.error(`Failed to fetch messages for thread ${thread.id} to determine creator:`, error);
+  }
+
+  return null;
+}
+
 module.exports = {
+  clearTicketCreator,
   createTicketThread,
   ensureTicketChannel,
   formatBaseThreadName,
   getNextTicketNumber,
   getThreadState,
+  getTicketCreatorId,
   initializeTicketCounter,
   isThreadClaimed,
   isThreadClosed,
