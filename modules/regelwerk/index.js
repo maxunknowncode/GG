@@ -1,9 +1,38 @@
+const { EmbedBuilder } = require('discord.js');
 const { regelwerk, roles } = require('../../config/ids');
 
 let interactionsRegistered = false;
 
 function getVerifyCustomId() {
   return regelwerk?.verifyCustomId ?? 'verify_user';
+}
+
+function buildEmbed({ color, title, description, footer }) {
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setTitle(title)
+    .setFooter({ text: footer })
+    .setTimestamp();
+
+  if (description) {
+    embed.setDescription(description);
+  }
+
+  return embed;
+}
+
+async function sendEphemeralEmbed(interaction, embed) {
+  if (!interaction?.isRepliable?.()) {
+    return;
+  }
+
+  const payload = { embeds: [embed], ephemeral: true };
+
+  if (interaction.replied || interaction.deferred) {
+    await interaction.followUp(payload);
+  } else {
+    await interaction.reply(payload);
+  }
 }
 
 function setupRegelwerkModule(client) {
@@ -22,21 +51,29 @@ function setupRegelwerkModule(client) {
       }
 
       if (!interaction.inGuild()) {
-        if (interaction.isRepliable()) {
-          await interaction.reply({
-            content: 'Diese Aktion ist nur auf dem Server verfügbar.',
-            ephemeral: true,
-          });
-        }
+        const embed = buildEmbed({
+          color: 0xe74c3c,
+          title: '❌ Verifizierung fehlgeschlagen',
+          description:
+            '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+          footer: 'Nur auf dem Server möglich',
+        });
+
+        await sendEphemeralEmbed(interaction, embed);
         return;
       }
 
-      const verifiedRoleId = roles?.verified;
-      if (!verifiedRoleId) {
-        await interaction.reply({
-          content: 'Die Verifizierten-Rolle ist nicht konfiguriert. Bitte informiere das Server-Team.',
-          ephemeral: true,
+      const memberRoleId = roles?.member;
+      if (!memberRoleId) {
+        console.error('Regelwerk: roles.member ist in config/ids.js nicht gesetzt.');
+        const embed = buildEmbed({
+          color: 0xe74c3c,
+          title: '❌ Verifizierung fehlgeschlagen',
+          description:
+            '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+          footer: 'Konfiguration prüfen',
         });
+        await sendEphemeralEmbed(interaction, embed);
         return;
       }
 
@@ -47,53 +84,80 @@ function setupRegelwerkModule(client) {
         try {
           member = await guild.members.fetch(interaction.user.id);
         } catch (fetchError) {
-          await interaction.reply({
-            content: 'Deine Mitgliedsdaten konnten nicht geladen werden. Bitte versuche es erneut.',
-            ephemeral: true,
+          console.error('Regelwerk: Mitgliedsdaten konnten nicht geladen werden:', fetchError);
+          const embed = buildEmbed({
+            color: 0xe74c3c,
+            title: '❌ Verifizierung fehlgeschlagen',
+            description:
+              '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+            footer: 'Erneut versuchen oder Team kontaktieren',
           });
+          await sendEphemeralEmbed(interaction, embed);
           return;
         }
       }
 
       if (!member) {
-        await interaction.reply({
-          content: 'Deine Mitgliedsdaten konnten nicht gefunden werden. Bitte versuche es erneut.',
-          ephemeral: true,
+        console.warn('Regelwerk: Mitgliedsdaten nicht gefunden für Benutzer:', interaction.user?.id);
+        const embed = buildEmbed({
+          color: 0xe74c3c,
+          title: '❌ Verifizierung fehlgeschlagen',
+          description:
+            '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+          footer: 'Erneut versuchen oder Team kontaktieren',
         });
+        await sendEphemeralEmbed(interaction, embed);
         return;
       }
 
-      if (member.roles.cache.has(verifiedRoleId)) {
-        await interaction.reply({
-          content: '⚠️ Du bist bereits verifiziert.',
-          ephemeral: true,
+      if (member.roles.cache.has(memberRoleId)) {
+        const embed = buildEmbed({
+          color: 0xf1c40f,
+          title: '⚠️ Bereits verifiziert',
+          description: '> Du besitzt die Rolle **Mitglied** bereits.',
+          footer: 'Keine Aktion erforderlich',
         });
+        await sendEphemeralEmbed(interaction, embed);
         return;
       }
 
       try {
-        await member.roles.add(verifiedRoleId, 'Verified via Regelwerk button');
+        await member.roles.add(memberRoleId, 'Verified via Regelwerk button');
       } catch (roleError) {
-        await interaction.reply({
-          content: 'Die Rolle konnte nicht vergeben werden. Bitte informiere das Server-Team.',
-          ephemeral: true,
+        console.error('Regelwerk: Rolle konnte nicht vergeben werden:', roleError);
+        const embed = buildEmbed({
+          color: 0xe74c3c,
+          title: '❌ Verifizierung fehlgeschlagen',
+          description:
+            '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+          footer: 'Bitte Team kontaktieren',
         });
+        await sendEphemeralEmbed(interaction, embed);
         return;
       }
 
-      await interaction.reply({
-        content: '✅ Du wurdest erfolgreich verifiziert und hast jetzt Zugriff auf den Server!',
-        ephemeral: true,
+      const successEmbed = buildEmbed({
+        color: 0x2ecc71,
+        title: '✅ Erfolgreich verifiziert',
+        description:
+          '> Du hast soeben die Rolle **Mitglied** erhalten.\n> Willkommen – du hast jetzt Zugriff auf alle freigeschalteten Bereiche!',
+        footer: 'Verifizierung abgeschlossen',
       });
+
+      await sendEphemeralEmbed(interaction, successEmbed);
     } catch (error) {
       console.error('Unhandled error in regelwerk interaction handler:', error);
 
       if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
         try {
-          await interaction.reply({
-            content: 'Die Verifizierung konnte nicht verarbeitet werden. Bitte versuche es erneut.',
-            ephemeral: true,
+          const fallbackEmbed = buildEmbed({
+            color: 0xe74c3c,
+            title: '❌ Verifizierung fehlgeschlagen',
+            description:
+              '> Die Rolle konnte nicht zugewiesen werden. Bitte wende dich an das Team.',
+            footer: 'Bitte Team kontaktieren',
           });
+          await interaction.reply({ embeds: [fallbackEmbed], ephemeral: true });
         } catch (replyError) {
           console.error('Failed to reply after regelwerk interaction error:', replyError);
         }

@@ -19,6 +19,7 @@ module.exports = {
     channel:   '1437045372089274503', // Text-Channel: #regeln
     messageId: '1437085174138667089', // Regelwerk-Message-ID (leer lassen, wenn nicht genutzt)
     verifyCustomId: 'verify_user', // Custom-ID: Verifizieren-Button
+    verifyEmoji: '<a:yes:1437026086683803679>', // Custom-Emoji: Verifizieren-Button
   },
 
   // IDs // Einladungen
@@ -35,7 +36,8 @@ module.exports = {
 
   roles: {
     team: '1437041533508649031', // Rolle: Team
-    verified: '', // Rolle: Verifiziert (wird vergeben, wenn Button gedrückt wird)
+    verified: '', // Rolle: Verifiziert (Legacy-Eintrag)
+    member: '1437041605747150939', // Rolle: Mitglied (wird bei Verifizierung vergeben)
   },
 
   // IDs // Tickets
