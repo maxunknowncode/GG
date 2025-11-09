@@ -1,6 +1,6 @@
 const { ensureTicketPanel } = require('./ticketPanel');
 const { registerTicketInteractions } = require('./ticketHandlers');
-const { initializeTicketCounter } = require('./threadUtils');
+const { initializeTicketCounter } = require('./ticketThread');
 
 async function ensureTicketEnvironment(client) {
   const guildId = process.env.GUILD_ID;

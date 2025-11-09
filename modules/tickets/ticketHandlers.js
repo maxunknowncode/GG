@@ -14,32 +14,38 @@ const {
   isThreadClosed,
   parseThreadName,
   withThreadState,
-} = require('./threadUtils');
+} = require('./ticketThread');
 
 const TICKET_EMBED_COLOR = 0xf9a602;
+const STATUS_EMBED_COLORS = {
+  claim: 0x57f287,
+  close: 0xed4245,
+};
 let handlersRegistered = false;
+
+function buildStatusEmbed(color, description) {
+  return new EmbedBuilder().setColor(color).setDescription(description).setTimestamp();
+}
 
 function buildTicketEmbed(option, userId, ticketNumber) {
   const ticketId = `T-${ticketNumber.toString().padStart(4, '0')}`;
 
   return new EmbedBuilder()
-    .setTitle(`🎫 Neues Ticket – ${option.categoryName}`)
+    .setTitle(`🎫 Ticket – ${option.categoryName}`)
     .setColor(TICKET_EMBED_COLOR)
-    .setFields([
-      {
-        name: '__**Ticket-Ersteller**__',
-        value: `> <@${userId}> – Ticket-ID: \`${ticketId}\``,
-      },
-      {
-        name: '__**Beschreibung**__',
-        value: '> Bitte schildere dein Anliegen so genau wie möglich.\n> Screenshots/IDs helfen bei der Bearbeitung.',
-      },
-      {
-        name: '__**Hinweise**__',
-        value: '> Ein Teammitglied meldet sich hier.\n> Nutze den Button **„Claim Ticket“**, wenn du Team bist.',
-      },
-    ])
-    .setFooter({ text: '„Nur Ticket-Ersteller und Team haben Zugriff.“' })
+    .setDescription(
+      [
+        `**Ticket für:** <@${userId}>`,
+        `**Ticket-ID:** \`${ticketId}\``,
+        '',
+        'Bitte schildere dein Anliegen so genau wie möglich.',
+        'Screenshots, IDs oder weitere Details helfen bei der Bearbeitung.',
+        '',
+        'Ein Teammitglied meldet sich hier schnellstmöglich.',
+        'Teammitglieder können das Ticket mit **„Claim Ticket“** übernehmen.',
+      ].join('\n'),
+    )
+    .setFooter({ text: 'Nur der Ticket-Ersteller und das Team sehen dieses Ticket.' })
     .setTimestamp();
 }
 
@@ -116,7 +122,6 @@ async function handleTicketSelection(interaction) {
     const components = buildTicketActionRow();
 
     await thread.send({
-      content: `<@${interaction.user.id}>`,
       embeds: [embed],
       components,
       allowedMentions: { users: [interaction.user.id] },
@@ -204,9 +209,14 @@ async function handleTicketClaim(interaction) {
     console.error(`Failed to disable claim button in thread ${thread.id}:`, error);
   }
 
+  const claimEmbed = buildStatusEmbed(
+    STATUS_EMBED_COLORS.claim,
+    `Ticket wurde von <@${interaction.user.id}> übernommen.`,
+  );
+
   try {
     await interaction.followUp({
-      content: `Ticket übernommen von <@${interaction.user.id}>`,
+      embeds: [claimEmbed],
       allowedMentions: { users: [interaction.user.id] },
     });
   } catch (error) {
@@ -256,9 +266,14 @@ async function handleTicketClose(interaction) {
     console.error('Failed to defer reply for ticket close:', error);
   }
 
+  const closeEmbed = buildStatusEmbed(
+    STATUS_EMBED_COLORS.close,
+    `Ticket wurde von <@${interaction.user.id}> geschlossen.`,
+  );
+
   try {
     await thread.send({
-      content: `Ticket geschlossen von <@${interaction.user.id}>`,
+      embeds: [closeEmbed],
       allowedMentions: { users: [interaction.user.id] },
     });
   } catch (error) {
