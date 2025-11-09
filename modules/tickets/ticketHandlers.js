@@ -14,19 +14,29 @@ const {
   initializeTicketCounter,
   isThreadClaimed,
   isThreadClosed,
+  buildThreadNameWithEmoji,
   parseThreadName,
-  withThreadState,
 } = require('./ticketThread');
 
 const TICKET_EMBED_COLOR = 0xf9a602;
-const STATUS_EMBED_COLORS = {
-  claim: 0x57f287,
-  close: 0xed4245,
-};
+const CLAIM_EMBED_COLOR = 0xf1c40f;
+const CLOSE_EMBED_COLOR = 0xed4245;
 let handlersRegistered = false;
 
-function buildStatusEmbed(color, description) {
-  return new EmbedBuilder().setColor(color).setDescription(description).setTimestamp();
+function buildClaimEmbed(userId) {
+  return new EmbedBuilder()
+    .setTitle('🟡 Ticket übernommen')
+    .setDescription(`Das Ticket wurde vom Teammitglied <@${userId}> übernommen.`)
+    .setColor(CLAIM_EMBED_COLOR)
+    .setTimestamp();
+}
+
+function buildCloseEmbed() {
+  return new EmbedBuilder()
+    .setTitle('🔴 Ticket geschlossen')
+    .setDescription('Dieses Ticket wurde geschlossen und archiviert.')
+    .setColor(CLOSE_EMBED_COLOR)
+    .setTimestamp();
 }
 
 function buildTicketEmbed(option, userId, ticketNumber) {
@@ -196,9 +206,15 @@ async function handleTicketClaim(interaction) {
     return;
   }
 
-  const updatedName = withThreadState(parsed.baseName, 'CLAIMED');
-
   try {
+    let updatedName;
+
+    if (thread.name.includes('🟢')) {
+      updatedName = thread.name.replace('🟢', '🟡');
+    } else {
+      updatedName = buildThreadNameWithEmoji(thread.name, '🟡', parsed.baseName);
+    }
+
     await thread.setName(updatedName);
   } catch (error) {
     console.error(`Failed to rename thread ${thread.id} while claiming:`, error);
@@ -211,10 +227,7 @@ async function handleTicketClaim(interaction) {
     console.error(`Failed to disable claim button in thread ${thread.id}:`, error);
   }
 
-  const claimEmbed = buildStatusEmbed(
-    STATUS_EMBED_COLORS.claim,
-    `Ticket wurde von <@${interaction.user.id}> übernommen.`,
-  );
+  const claimEmbed = buildClaimEmbed(interaction.user.id);
 
   try {
     await interaction.followUp({
@@ -269,20 +282,6 @@ async function handleTicketClose(interaction) {
     console.error('Failed to defer reply for ticket close:', error);
   }
 
-  const closeEmbed = buildStatusEmbed(
-    STATUS_EMBED_COLORS.close,
-    `Ticket wurde von <@${interaction.user.id}> geschlossen.`,
-  );
-
-  try {
-    await thread.send({
-      embeds: [closeEmbed],
-      allowedMentions: { users: [interaction.user.id] },
-    });
-  } catch (error) {
-    console.error(`Failed to send ticket close notification in thread ${thread.id}:`, error);
-  }
-
   if (creatorId) {
     try {
       await thread.members.remove(creatorId);
@@ -295,12 +294,27 @@ async function handleTicketClose(interaction) {
 
   clearTicketCreator(thread.id);
 
-  const closedName = withThreadState(parsed.baseName, 'CLOSED');
-
   try {
+    let closedName;
+
+    if (/🟢|🟡/.test(thread.name)) {
+      closedName = thread.name.replace(/🟢|🟡/, '🔴');
+    } else {
+      const cleanName = thread.name.replace(/^[^\s]+\s/, '') || parsed.baseName || 'ticket';
+      closedName = `🔴 ${cleanName}`.trim();
+    }
+
     await thread.setName(closedName);
   } catch (error) {
     console.error(`Failed to rename thread ${thread.id} on close:`, error);
+  }
+
+  const closeEmbed = buildCloseEmbed();
+
+  try {
+    await thread.send({ embeds: [closeEmbed] });
+  } catch (error) {
+    console.error(`Failed to send ticket close notification in thread ${thread.id}:`, error);
   }
 
   try {

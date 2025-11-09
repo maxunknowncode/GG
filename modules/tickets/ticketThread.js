@@ -1,8 +1,15 @@
-const { ChannelType, ThreadAutoArchiveDuration } = require('discord.js');
+const { ChannelType } = require('discord.js');
 const { tickets } = require('../../config/ids');
 const THREAD_STATE_REGEX = /^\[(?<state>[^\]]+)]\s*/i;
+const THREAD_STATUS_EMOJI_REGEX = /^(?<emoji>🟢|🟡|🔴)\s*/;
 const THREAD_NAME_REGEX = /^(?<type>[a-z0-9-]+)-(?<number>\d{3,})$/i;
 const LEGACY_THREAD_NAME_REGEX = /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
+
+const THREAD_STATUS_EMOJIS = {
+  OPEN: '🟢',
+  CLAIMED: '🟡',
+  CLOSED: '🔴',
+};
 
 let ticketCounter = 0;
 let counterInitialized = false;
@@ -13,12 +20,21 @@ function delay(ms) {
 }
 
 function extractThreadState(name = '') {
-  const match = name.match(THREAD_STATE_REGEX);
-  return match?.groups?.state?.toUpperCase?.() ?? null;
+  const emojiMatch = name.match(THREAD_STATUS_EMOJI_REGEX);
+  if (emojiMatch?.groups?.emoji) {
+    const emoji = emojiMatch.groups.emoji;
+    const stateEntry = Object.entries(THREAD_STATUS_EMOJIS).find(([, value]) => value === emoji);
+    if (stateEntry) {
+      return stateEntry[0];
+    }
+  }
+
+  const legacyMatch = name.match(THREAD_STATE_REGEX);
+  return legacyMatch?.groups?.state?.toUpperCase?.() ?? null;
 }
 
 function extractBaseThreadName(name = '') {
-  return name.replace(THREAD_STATE_REGEX, '').trim();
+  return name.replace(THREAD_STATUS_EMOJI_REGEX, '').replace(THREAD_STATE_REGEX, '').trim();
 }
 
 function parseThreadName(name = '') {
@@ -60,13 +76,19 @@ function formatBaseThreadName(typeKey, ticketNumber) {
   return `${typeKey}-${paddedNumber}`;
 }
 
-function withThreadState(baseName, state) {
+function resolveStateEmoji(state) {
   if (!state) {
-    return baseName;
+    return THREAD_STATUS_EMOJIS.OPEN;
   }
 
   const upperState = state.toUpperCase();
-  return `[${upperState}] ${baseName}`;
+  return THREAD_STATUS_EMOJIS[upperState] ?? THREAD_STATUS_EMOJIS.OPEN;
+}
+
+function withThreadState(baseName, state = 'OPEN') {
+  const cleanedBaseName = extractBaseThreadName(baseName) || baseName;
+  const emoji = resolveStateEmoji(state);
+  return `${emoji} ${cleanedBaseName}`.trim();
 }
 
 function getThreadState(name = '') {
@@ -79,6 +101,19 @@ function isThreadClaimed(name = '') {
 
 function isThreadClosed(name = '') {
   return getThreadState(name) === 'CLOSED';
+}
+
+function buildThreadNameWithEmoji(currentName, emoji, fallbackBaseName) {
+  if (!emoji) {
+    return currentName;
+  }
+
+  if (THREAD_STATUS_EMOJI_REGEX.test(currentName)) {
+    return currentName.replace(THREAD_STATUS_EMOJI_REGEX, `${emoji} `).trim();
+  }
+
+  const cleanedName = extractBaseThreadName(currentName) || fallbackBaseName || 'ticket';
+  return `${emoji} ${cleanedName}`.trim();
 }
 
 function getNextTicketNumber() {
@@ -216,12 +251,12 @@ async function createTicketThread(channel, option, ticketNumber, creator) {
   const sanitizedTypeKey = rawTypeKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const normalizedTypeKey = sanitizedTypeKey.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'ticket';
   const baseName = formatBaseThreadName(normalizedTypeKey, ticketNumber);
-  const threadName = withThreadState(baseName);
+  const threadName = withThreadState(baseName, 'OPEN');
 
   try {
     const thread = await channel.threads.create({
       name: threadName,
-      autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
+      autoArchiveDuration: 1440,
       type: ChannelType.PrivateThread,
       invitable: false,
       reason: `Ticket erstellt von ${creator.tag} (${creator.id}) für ${option.key}`,
@@ -338,6 +373,7 @@ async function getTicketCreatorId(thread) {
 }
 
 module.exports = {
+  buildThreadNameWithEmoji,
   clearTicketCreator,
   createTicketThread,
   ensureTicketChannel,
