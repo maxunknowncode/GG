@@ -36,7 +36,6 @@ module.exports = {
 
   roles: {
     team: '1437041533508649031', // Rolle: Team
-    verified: '', // Rolle: Verifiziert (Legacy-Eintrag)
     member: '1437041605747150939', // Rolle: Mitglied (wird bei Verifizierung vergeben)
   },
 
