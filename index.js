@@ -9,6 +9,7 @@ const { ensureTicketEnvironment, setupTicketSystem } = require('./modules/ticket
 const { ensureInvitationMessage, setupInvitationModule } = require('./modules/invitations');
 const { setupRegelwerkModule } = require('./modules/regelwerk');
 const { setupJoin2CreateModule } = require('./modules/join2create');
+const { setupWelcomeModule } = require('./modules/welcome');
 
 const REQUIRED_INTENTS = [
   GatewayIntentBits.Guilds,
@@ -29,6 +30,7 @@ setupTicketSystem(client);
 setupInvitationModule(client);
 setupRegelwerkModule(client);
 setupJoin2CreateModule(client);
+setupWelcomeModule(client);
 
 client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);

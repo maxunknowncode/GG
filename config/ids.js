@@ -31,6 +31,11 @@ module.exports = {
     inviteLink: 'https://discord.gg/hBP2kBEjaW', // Permanenter Server-Link
   },
 
+  welcome: {
+    category: '1437045325918634094', // Kategorie: Willkommen
+    channel: '1437045351386451989', // Text-Channel: #willkommen
+  },
+
   // IDs // Rollen
   // Enthält wichtige Rollen-IDs
 
