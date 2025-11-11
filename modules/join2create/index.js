@@ -6,7 +6,7 @@ const {
 
 const JOIN_TO_CREATE_CHANNEL_ID = '1437047587160199210';
 const TARGET_CATEGORY_ID = '1437047459456094238';
-const MEMBER_ROLE_NAME = 'Mitglied';
+const MEMBER_ROLE_ID = '1437041605747150939';
 
 const MODULE_FLAG = Symbol('join2createModuleReady');
 
@@ -27,29 +27,8 @@ const MEMBER_ALLOWED_PERMISSIONS = [
 ];
 
 function buildChannelName(member) {
-  const baseName = member?.displayName || member?.user?.username || 'Unbekannt';
-  return `🎧︱${baseName}`.slice(0, 100);
-}
-
-async function resolveRoleByName(guild, roleName) {
-  if (!guild || !roleName) {
-    return null;
-  }
-
-  const existingRole = guild.roles.cache.find(
-    (role) => role.name.toLowerCase() === roleName.toLowerCase()
-  );
-  if (existingRole) {
-    return existingRole;
-  }
-
-  try {
-    const roles = await guild.roles.fetch();
-    return roles.find((role) => role.name.toLowerCase() === roleName.toLowerCase()) ?? null;
-  } catch (error) {
-    console.warn(`Join2Create: Konnte Rolle "${roleName}" nicht abrufen:`, error);
-    return null;
-  }
+  const baseName = member?.user?.username || member?.displayName || 'Unbekannt';
+  return `🔊・${baseName}`.slice(0, 100);
 }
 
 function setupJoin2CreateModule(client) {
@@ -141,7 +120,23 @@ function setupJoin2CreateModule(client) {
       }
 
       const everyoneRole = guild.roles.everyone;
-      const memberRole = await resolveRoleByName(guild, MEMBER_ROLE_NAME);
+      const memberRole = await guild.roles
+        .fetch(MEMBER_ROLE_ID)
+        .then((role) => role ?? null)
+        .catch((error) => {
+          console.error(
+            `Join2Create: Mitglied-Rolle (${MEMBER_ROLE_ID}) konnte nicht geladen werden:`,
+            error
+          );
+          return null;
+        });
+
+      if (!memberRole) {
+        console.error(
+          'Join2Create: Temporärer Channel wurde nicht erstellt, da die Mitglied-Rolle fehlt.'
+        );
+        return;
+      }
 
       const permissionOverwrites = [
         {
@@ -151,13 +146,11 @@ function setupJoin2CreateModule(client) {
         },
       ];
 
-      if (memberRole) {
-        permissionOverwrites.push({
-          id: memberRole.id,
-          allow: MEMBER_ALLOWED_PERMISSIONS,
-          type: 'role',
-        });
-      }
+      permissionOverwrites.push({
+        id: memberRole.id,
+        allow: MEMBER_ALLOWED_PERMISSIONS,
+        type: 'role',
+      });
 
       permissionOverwrites.push({
         id: member.id,
@@ -216,7 +209,7 @@ function setupJoin2CreateModule(client) {
                 (channel) =>
                   channel.type === ChannelType.GuildVoice &&
                   channel.parentId === TARGET_CATEGORY_ID &&
-                  channel.name.startsWith('🎧︱')
+                  (channel.name.startsWith('🔊・') || channel.name.startsWith('🎧︱'))
               )
               .map((channel) => {
                 if (channel.members.size === 0) {
