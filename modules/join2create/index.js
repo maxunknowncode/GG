@@ -26,6 +26,10 @@ const MEMBER_ALLOWED_PERMISSIONS = [
   PermissionFlagsBits.UseVAD,
 ];
 
+const MEMBER_DENIED_PERMISSIONS = ALL_PERMISSION_BITS.filter(
+  (permission) => !MEMBER_ALLOWED_PERMISSIONS.includes(permission)
+);
+
 function buildChannelName(member) {
   const baseName = member?.user?.username || member?.displayName || 'Unbekannt';
   return `🔊・${baseName}`.slice(0, 100);
@@ -144,19 +148,18 @@ function setupJoin2CreateModule(client) {
           deny: ALL_PERMISSION_BITS,
           type: 'role',
         },
+        {
+          id: memberRole.id,
+          allow: MEMBER_ALLOWED_PERMISSIONS,
+          deny: MEMBER_DENIED_PERMISSIONS,
+          type: 'role',
+        },
+        {
+          id: member.id,
+          allow: [PermissionFlagsBits.ManageChannels],
+          type: 'member',
+        },
       ];
-
-      permissionOverwrites.push({
-        id: memberRole.id,
-        allow: MEMBER_ALLOWED_PERMISSIONS,
-        type: 'role',
-      });
-
-      permissionOverwrites.push({
-        id: member.id,
-        allow: [PermissionFlagsBits.ManageChannels],
-        type: 'member',
-      });
 
       const createdChannel = await guild.channels.create({
         name: buildChannelName(member),
