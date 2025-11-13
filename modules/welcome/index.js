@@ -1,6 +1,8 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { welcome } = require('../../config/ids');
 
+const LOG_PREFIX = 'Welcome:';
+
 let welcomeListenerRegistered = false;
 
 function buildWelcomeEmbed(memberId) {
@@ -34,21 +36,23 @@ function buildWelcomeEmbed(memberId) {
 
 async function sendWelcomeMessage(member) {
   if (!welcome?.channelId) {
-    console.error('Willkommens-Channel-ID ist nicht konfiguriert.');
+    console.error(`${LOG_PREFIX} Willkommens-Channel-ID ist nicht konfiguriert.`);
     return;
   }
 
   try {
     const channel = await member.client.channels.fetch(welcome.channelId);
     if (!channel || !channel.isTextBased()) {
-      console.error('Der konfigurierte Willkommens-Channel konnte nicht gefunden oder ist nicht textbasiert.');
+      console.error(
+        `${LOG_PREFIX} Der konfigurierte Willkommens-Channel konnte nicht gefunden oder ist nicht textbasiert.`,
+      );
       return;
     }
 
     const embed = buildWelcomeEmbed(member.id);
     await channel.send({ embeds: [embed] });
   } catch (error) {
-    console.error('Willkommensnachricht konnte nicht gesendet werden:', error);
+    console.error(`${LOG_PREFIX} Willkommensnachricht konnte nicht gesendet werden:`, error);
   }
 }
 
@@ -70,7 +74,7 @@ function registerWelcomeListener(client) {
       try {
         await member.fetch();
       } catch (error) {
-        console.error('Konnte Teil-Mitgliedsdaten beim Join nicht abrufen:', error);
+        console.error(`${LOG_PREFIX} Konnte Teil-Mitgliedsdaten beim Join nicht abrufen:`, error);
         return;
       }
     }

@@ -1,6 +1,8 @@
 const { einladungen } = require('../../config/ids');
 const { COPY_BUTTON_CUSTOM_ID, ensureInvitationMessage } = require('./inviteMessage');
 
+const LOG_PREFIX = 'Invites:';
+
 let interactionsRegistered = false;
 
 function registerInvitationInteractions(client) {
@@ -23,7 +25,7 @@ function registerInvitationInteractions(client) {
     try {
       await interaction.reply({ content: responseContent, ephemeral: true });
     } catch (error) {
-      console.error('Antwort auf copy_invite-Interaktion fehlgeschlagen:', error);
+      console.error(`${LOG_PREFIX} Antwort auf copy_invite-Interaktion fehlgeschlagen:`, error);
 
       if (!interaction.replied && !interaction.deferred) {
         try {
@@ -32,7 +34,7 @@ function registerInvitationInteractions(client) {
             ephemeral: true,
           });
         } catch (replyError) {
-          console.error('Senden der Fallback-Antwort für copy_invite fehlgeschlagen:', replyError);
+          console.error(`${LOG_PREFIX} Senden der Fallback-Antwort für copy_invite fehlgeschlagen:`, replyError);
         }
       }
     }

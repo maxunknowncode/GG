@@ -1,5 +1,7 @@
 const { stats } = require('../config/ids');
 
+const LOG_PREFIX = 'Stats:';
+
 const CATEGORY_ID = stats?.categoryId;
 const CHANNEL_CONFIG = Object.values(stats?.channels ?? {});
 
@@ -65,7 +67,7 @@ async function updateVoiceChannelName(channel, label, value) {
   try {
     await channel.setName(nextName);
   } catch (error) {
-    console.error(`Failed to set channel name for ${channel?.id ?? 'unknown'}:`, error);
+    console.error(`${LOG_PREFIX} Failed to set channel name for ${channel?.id ?? 'unknown'}:`, error);
   }
 }
 
@@ -78,7 +80,7 @@ async function computeStats(guild) {
       stats.Mitglieder = guild.memberCount;
     }
   } catch (error) {
-    console.error('Failed to fetch guild members:', error);
+    console.error(`${LOG_PREFIX} Failed to fetch guild members:`, error);
   }
 
   try {
@@ -91,7 +93,7 @@ async function computeStats(guild) {
       stats.Online = onlineCount;
     }
   } catch (error) {
-    console.error('Failed to compute online members:', error);
+    console.error(`${LOG_PREFIX} Failed to compute online members:`, error);
   }
 
   try {
@@ -99,7 +101,7 @@ async function computeStats(guild) {
       stats.Boosts = guild.premiumSubscriptionCount ?? stats.Boosts;
     }
   } catch (error) {
-    console.error('Failed to determine boost count:', error);
+    console.error(`${LOG_PREFIX} Failed to determine boost count:`, error);
   }
 
   lastKnownStats = stats;
@@ -108,7 +110,7 @@ async function computeStats(guild) {
 
 async function updateGuildStats(client, guildId) {
   if (!CATEGORY_ID || CHANNEL_CONFIG.length === 0) {
-    console.warn('Stats configuration is incomplete. Skipping stats update.');
+    console.warn(`${LOG_PREFIX} Stats configuration is incomplete. Skipping stats update.`);
     return;
   }
 
@@ -126,18 +128,18 @@ async function updateGuildStats(client, guildId) {
         try {
           const channel = await resolveChannel(guild, id);
           if (!channel || channel.parentId !== CATEGORY_ID) {
-            console.warn(`Channel ${id} not found or not in the expected category.`);
+    console.warn(`${LOG_PREFIX} Channel ${id} not found or not in the expected category.`);
             return;
           }
 
           await updateVoiceChannelName(channel, label, stats[label]);
         } catch (error) {
-          console.error(`Failed to update channel ${id}:`, error);
+          console.error(`${LOG_PREFIX} Failed to update channel ${id}:`, error);
         }
       }),
     );
   } catch (error) {
-    console.error('Failed to update guild stats:', error);
+    console.error(`${LOG_PREFIX} Failed to update guild stats:`, error);
   }
 }
 
@@ -149,7 +151,7 @@ function startStatsUpdater(client, options = {}) {
 
   const runUpdate = async () => {
     if (isRunning) {
-      console.warn('Stats update skipped because previous run is still in progress.');
+      console.warn(`${LOG_PREFIX} Stats update skipped because previous run is still in progress.`);
       return;
     }
 
@@ -157,19 +159,19 @@ function startStatsUpdater(client, options = {}) {
     try {
       await updateGuildStats(client, guildId);
     } catch (error) {
-      console.error('Unexpected error during stats update:', error);
+      console.error(`${LOG_PREFIX} Unexpected error during stats update:`, error);
     } finally {
       isRunning = false;
     }
   };
 
   runUpdate().catch((error) => {
-    console.error('Initial stats update failed:', error);
+    console.error(`${LOG_PREFIX} Initial stats update failed:`, error);
   });
 
   return setInterval(() => {
     runUpdate().catch((error) => {
-      console.error('Scheduled stats update failed:', error);
+      console.error(`${LOG_PREFIX} Scheduled stats update failed:`, error);
     });
   }, resolvedInterval);
 }
