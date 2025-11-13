@@ -3,10 +3,11 @@ const {
   PermissionFlagsBits,
   Collection,
 } = require('discord.js');
+const { joinToCreate, roles } = require('../../config/ids');
 
-const JOIN_TO_CREATE_CHANNEL_ID = '1437047587160199210';
-const TARGET_CATEGORY_ID = '1437047459456094238';
-const MEMBER_ROLE_ID = '1437041605747150939';
+const JOIN_TO_CREATE_CHANNEL_ID = joinToCreate?.channelId;
+const TARGET_CATEGORY_ID = joinToCreate?.targetCategoryId;
+const MEMBER_ROLE_ID = joinToCreate?.memberRoleId ?? roles?.memberRoleId;
 
 const MODULE_FLAG = Symbol('join2createModuleReady');
 
@@ -41,6 +42,13 @@ function setupJoin2CreateModule(client) {
   }
 
   client[MODULE_FLAG] = true;
+
+  if (!JOIN_TO_CREATE_CHANNEL_ID || !TARGET_CATEGORY_ID || !MEMBER_ROLE_ID) {
+    console.error(
+      'Join2Create: Konfiguration in config/ids.js ist unvollständig. Modul wird nicht aktiviert.'
+    );
+    return;
+  }
 
   const temporaryChannels = new Collection();
   const creationLocks = new Set();
