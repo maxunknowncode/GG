@@ -1,12 +1,15 @@
-const {
-  Client,
-  GatewayIntentBits,
-  Partials,
-} = require('discord.js');
+const env = require('./config/env');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { startStatsUpdater } = require('./tasks/updateStats');
 const { sendRegelwerk } = require('./tasks/sendRegelwerk');
-const { ensureTicketEnvironment, setupTicketSystem } = require('./modules/tickets');
-const { ensureInvitationMessage, setupInvitationModule } = require('./modules/invitations');
+const {
+  ensureTicketEnvironment,
+  setupTicketSystem,
+} = require('./modules/tickets');
+const {
+  ensureInvitationMessage,
+  setupInvitationModule,
+} = require('./modules/invitations');
 const { setupRegelwerkModule } = require('./modules/regelwerk');
 const { setupJoin2CreateModule } = require('./modules/join2create');
 const { setupWelcomeModule } = require('./modules/welcome');
@@ -41,7 +44,10 @@ client.once('ready', async () => {
     await ensureTicketEnvironment(client);
     console.log('Ticket-System erfolgreich initialisiert.');
   } catch (error) {
-    console.error('Ticket-System konnte nicht vollständig initialisiert werden:', error);
+    console.error(
+      'Ticket-System konnte nicht vollständig initialisiert werden:',
+      error,
+    );
   }
 
   try {
@@ -53,9 +59,14 @@ client.once('ready', async () => {
 
   try {
     await ensureInvitationMessage(client);
-    console.log('Einladungsnachricht wurde erfolgreich gesendet oder aktualisiert.');
+    console.log(
+      'Einladungsnachricht wurde erfolgreich gesendet oder aktualisiert.',
+    );
   } catch (error) {
-    console.error('Einladungsnachricht konnte nicht verarbeitet werden:', error);
+    console.error(
+      'Einladungsnachricht konnte nicht verarbeitet werden:',
+      error,
+    );
   }
 });
 
@@ -68,7 +79,10 @@ client.on('shardError', (error) => {
 });
 
 client.on('shardDisconnect', (event, shardId) => {
-  console.warn(`Shard ${shardId} disconnected:`, event?.reason ?? 'unknown reason');
+  console.warn(
+    `Shard ${shardId} disconnected:`,
+    event?.reason ?? 'unknown reason',
+  );
 });
 
 client.on('shardReconnecting', (shardId) => {
@@ -139,7 +153,7 @@ async function ensureLoggedIn() {
 
   loginInProgress = true;
 
-  const token = process.env.TOKEN;
+  const token = env.discordToken;
   if (!token) {
     console.error('TOKEN is not defined in environment variables.');
     loginInProgress = false;
@@ -150,7 +164,9 @@ async function ensureLoggedIn() {
     await loginWithRetry(token);
   } catch (error) {
     if (shouldRetryLogin(error)) {
-      console.error('Login failed after multiple attempts. Retrying in 60 seconds.');
+      console.error(
+        'Login failed after multiple attempts. Retrying in 60 seconds.',
+      );
       setTimeout(() => {
         loginInProgress = false;
         ensureLoggedIn().catch((retryError) => {
@@ -160,7 +176,9 @@ async function ensureLoggedIn() {
       return;
     }
 
-    console.error('Login failed due to a fatal error. Please check the token configuration.');
+    console.error(
+      'Login failed due to a fatal error. Please check the token configuration.',
+    );
   } finally {
     loginInProgress = false;
   }

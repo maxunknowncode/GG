@@ -67,7 +67,10 @@ async function updateVoiceChannelName(channel, label, value) {
   try {
     await channel.setName(nextName);
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to set channel name for ${channel?.id ?? 'unknown'}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to set channel name for ${channel?.id ?? 'unknown'}:`,
+      error,
+    );
   }
 }
 
@@ -110,7 +113,9 @@ async function computeStats(guild) {
 
 async function updateGuildStats(client, guildId) {
   if (!CATEGORY_ID || CHANNEL_CONFIG.length === 0) {
-    console.warn(`${LOG_PREFIX} Stats configuration is incomplete. Skipping stats update.`);
+    console.warn(
+      `${LOG_PREFIX} Stats configuration is incomplete. Skipping stats update.`,
+    );
     return;
   }
 
@@ -128,7 +133,9 @@ async function updateGuildStats(client, guildId) {
         try {
           const channel = await resolveChannel(guild, id);
           if (!channel || channel.parentId !== CATEGORY_ID) {
-    console.warn(`${LOG_PREFIX} Channel ${id} not found or not in the expected category.`);
+            console.warn(
+              `${LOG_PREFIX} Channel ${id} not found or not in the expected category.`,
+            );
             return;
           }
 
@@ -145,13 +152,18 @@ async function updateGuildStats(client, guildId) {
 
 function startStatsUpdater(client, options = {}) {
   const guildId = process.env.GUILD_ID;
-  const interval = Number(options.interval ?? process.env.STATS_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
-  const resolvedInterval = Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_INTERVAL_MS;
+  const interval = Number(
+    options.interval ?? process.env.STATS_INTERVAL_MS ?? DEFAULT_INTERVAL_MS,
+  );
+  const resolvedInterval =
+    Number.isFinite(interval) && interval > 0 ? interval : DEFAULT_INTERVAL_MS;
   let isRunning = false;
 
   const runUpdate = async () => {
     if (isRunning) {
-      console.warn(`${LOG_PREFIX} Stats update skipped because previous run is still in progress.`);
+      console.warn(
+        `${LOG_PREFIX} Stats update skipped because previous run is still in progress.`,
+      );
       return;
     }
 
@@ -159,7 +171,10 @@ function startStatsUpdater(client, options = {}) {
     try {
       await updateGuildStats(client, guildId);
     } catch (error) {
-      console.error(`${LOG_PREFIX} Unexpected error during stats update:`, error);
+      console.error(
+        `${LOG_PREFIX} Unexpected error during stats update:`,
+        error,
+      );
     } finally {
       isRunning = false;
     }

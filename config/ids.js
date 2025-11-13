@@ -61,7 +61,8 @@ module.exports = {
         channelId: '1437090552964448296', // Textkanal-ID: #support
         emoji: '🛠️', // Emoji: Support
         label: 'Support', // Label: Support
-        description: 'Allgemeine Hilfe oder technische Probleme rund um den Server', // Beschreibung: Support
+        description:
+          'Allgemeine Hilfe oder technische Probleme rund um den Server', // Beschreibung: Support
         channelName: 'support', // Parent-Textkanal-Name: support
         categoryName: 'Support', // Logische Kategoriebezeichnung: Support
       },
@@ -71,7 +72,8 @@ module.exports = {
         channelId: '1437090579510071418', // Textkanal-ID: #bewerbung
         emoji: '📩', // Emoji: Bewerbung
         label: 'Bewerbung', // Label: Bewerbung
-        description: 'Anfrage zur Mitarbeit im Team (z. B. Mod, Support, Creator)', // Beschreibung: Bewerbung
+        description:
+          'Anfrage zur Mitarbeit im Team (z. B. Mod, Support, Creator)', // Beschreibung: Bewerbung
         channelName: 'bewerbung', // Parent-Textkanal-Name: bewerbung
         categoryName: 'Bewerbung', // Logische Kategoriebezeichnung: Bewerbung
       },
@@ -91,7 +93,8 @@ module.exports = {
         channelId: '1437090624624005271', // Textkanal-ID: #privates-anliegen
         emoji: '🔒', // Emoji: Privates Anliegen
         label: 'Privates Anliegen', // Label: Privates Anliegen
-        description: 'Vertrauliche Themen, Beschwerden oder sensible Fragen an die Serverleitung', // Beschreibung: Privates Anliegen
+        description:
+          'Vertrauliche Themen, Beschwerden oder sensible Fragen an die Serverleitung', // Beschreibung: Privates Anliegen
         channelName: 'privates-anliegen', // Parent-Textkanal-Name: privates-anliegen
         categoryName: 'Privates Anliegen', // Logische Kategoriebezeichnung: Privates Anliegen
       },

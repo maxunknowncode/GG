@@ -1,8 +1,4 @@
-const {
-  ChannelType,
-  PermissionFlagsBits,
-  Collection,
-} = require('discord.js');
+const { ChannelType, PermissionFlagsBits, Collection } = require('discord.js');
 const { joinToCreate, roles } = require('../../config/ids');
 
 const JOIN_TO_CREATE_CHANNEL_ID = joinToCreate?.channelId;
@@ -13,7 +9,9 @@ const MODULE_FLAG = Symbol('join2createModuleReady');
 
 const ALL_PERMISSION_BITS = [
   ...new Set(
-    Object.values(PermissionFlagsBits).filter((value) => typeof value === 'bigint')
+    Object.values(PermissionFlagsBits).filter(
+      (value) => typeof value === 'bigint',
+    ),
   ),
 ];
 
@@ -28,7 +26,7 @@ const MEMBER_ALLOWED_PERMISSIONS = [
 ];
 
 const MEMBER_DENIED_PERMISSIONS = ALL_PERMISSION_BITS.filter(
-  (permission) => !MEMBER_ALLOWED_PERMISSIONS.includes(permission)
+  (permission) => !MEMBER_ALLOWED_PERMISSIONS.includes(permission),
 );
 
 function buildChannelName(member) {
@@ -45,7 +43,7 @@ function setupJoin2CreateModule(client) {
 
   if (!JOIN_TO_CREATE_CHANNEL_ID || !TARGET_CATEGORY_ID || !MEMBER_ROLE_ID) {
     console.error(
-      'Join2Create: Konfiguration in config/ids.js ist unvollständig. Modul wird nicht aktiviert.'
+      'Join2Create: Konfiguration in config/ids.js ist unvollständig. Modul wird nicht aktiviert.',
     );
     return;
   }
@@ -63,11 +61,13 @@ function setupJoin2CreateModule(client) {
     }
 
     try {
-      await channel.delete('Join2Create: Aufräumen eines leeren temporären Channels');
+      await channel.delete(
+        'Join2Create: Aufräumen eines leeren temporären Channels',
+      );
     } catch (error) {
       console.error(
         `Join2Create: Löschen des Channels ${channel.id} fehlgeschlagen:`,
-        error
+        error,
       );
     } finally {
       temporaryChannels.delete(channel.id);
@@ -89,7 +89,8 @@ function setupJoin2CreateModule(client) {
     const leftChannelId = oldState.channelId;
 
     if (leftChannelId && temporaryChannels.has(leftChannelId)) {
-      const leftChannel = oldState.channel ?? guild.channels.cache.get(leftChannelId);
+      const leftChannel =
+        oldState.channel ?? guild.channels.cache.get(leftChannelId);
       await cleanupChannelIfEmpty(leftChannel);
     }
 
@@ -101,7 +102,9 @@ function setupJoin2CreateModule(client) {
       return;
     }
 
-    const existingEntry = temporaryChannels.find((entry) => entry.ownerId === member.id);
+    const existingEntry = temporaryChannels.find(
+      (entry) => entry.ownerId === member.id,
+    );
     if (existingEntry) {
       const existingChannel = guild.channels.cache.get(existingEntry.channelId);
       if (existingChannel) {
@@ -110,7 +113,7 @@ function setupJoin2CreateModule(client) {
         } catch (error) {
           console.error(
             `Join2Create: Verschieben in vorhandenen Channel fehlgeschlagen (${existingChannel.id}):`,
-            error
+            error,
           );
         }
         return;
@@ -126,7 +129,7 @@ function setupJoin2CreateModule(client) {
         (await guild.channels.fetch(TARGET_CATEGORY_ID).catch(() => null));
       if (!category || category.type !== ChannelType.GuildCategory) {
         console.error(
-          `Join2Create: Kategorie ${TARGET_CATEGORY_ID} wurde nicht gefunden. Channel wird nicht erstellt.`
+          `Join2Create: Kategorie ${TARGET_CATEGORY_ID} wurde nicht gefunden. Channel wird nicht erstellt.`,
         );
         return;
       }
@@ -138,14 +141,14 @@ function setupJoin2CreateModule(client) {
         .catch((error) => {
           console.error(
             `Join2Create: Mitglied-Rolle (${MEMBER_ROLE_ID}) konnte nicht geladen werden:`,
-            error
+            error,
           );
           return null;
         });
 
       if (!memberRole) {
         console.error(
-          'Join2Create: Temporärer Channel wurde nicht erstellt, da die Mitglied-Rolle fehlt.'
+          'Join2Create: Temporärer Channel wurde nicht erstellt, da die Mitglied-Rolle fehlt.',
         );
         return;
       }
@@ -188,11 +191,14 @@ function setupJoin2CreateModule(client) {
       } catch (error) {
         console.error(
           `Join2Create: Automatisches Verschieben in Channel ${createdChannel.id} fehlgeschlagen:`,
-          error
+          error,
         );
       }
     } catch (error) {
-      console.error('Join2Create: Fehler beim Erstellen eines temporären Channels:', error);
+      console.error(
+        'Join2Create: Fehler beim Erstellen eines temporären Channels:',
+        error,
+      );
     } finally {
       creationLocks.delete(member.id);
     }
@@ -220,7 +226,8 @@ function setupJoin2CreateModule(client) {
                 (channel) =>
                   channel.type === ChannelType.GuildVoice &&
                   channel.parentId === TARGET_CATEGORY_ID &&
-                  (channel.name.startsWith('🔊・') || channel.name.startsWith('🎧︱'))
+                  (channel.name.startsWith('🔊・') ||
+                    channel.name.startsWith('🎧︱')),
               )
               .map((channel) => {
                 if (channel.members.size === 0) {
@@ -239,7 +246,7 @@ function setupJoin2CreateModule(client) {
           .catch((error) => {
             console.error(
               `Join2Create: Fehler beim Aufräumen der Guild ${guildId}:`,
-              error
+              error,
             );
           });
 

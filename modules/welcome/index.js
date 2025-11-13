@@ -36,7 +36,9 @@ function buildWelcomeEmbed(memberId) {
 
 async function sendWelcomeMessage(member) {
   if (!welcome?.channelId) {
-    console.error(`${LOG_PREFIX} Willkommens-Channel-ID ist nicht konfiguriert.`);
+    console.error(
+      `${LOG_PREFIX} Willkommens-Channel-ID ist nicht konfiguriert.`,
+    );
     return;
   }
 
@@ -52,7 +54,10 @@ async function sendWelcomeMessage(member) {
     const embed = buildWelcomeEmbed(member.id);
     await channel.send({ embeds: [embed] });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Willkommensnachricht konnte nicht gesendet werden:`, error);
+    console.error(
+      `${LOG_PREFIX} Willkommensnachricht konnte nicht gesendet werden:`,
+      error,
+    );
   }
 }
 
@@ -62,7 +67,9 @@ function registerWelcomeListener(client) {
   }
 
   if (!client) {
-    throw new Error('Discord client instance is required to register the welcome listener.');
+    throw new Error(
+      'Discord client instance is required to register the welcome listener.',
+    );
   }
 
   client.on(Events.GuildMemberAdd, async (member) => {
@@ -74,7 +81,10 @@ function registerWelcomeListener(client) {
       try {
         await member.fetch();
       } catch (error) {
-        console.error(`${LOG_PREFIX} Konnte Teil-Mitgliedsdaten beim Join nicht abrufen:`, error);
+        console.error(
+          `${LOG_PREFIX} Konnte Teil-Mitgliedsdaten beim Join nicht abrufen:`,
+          error,
+        );
         return;
       }
     }

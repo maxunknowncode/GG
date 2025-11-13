@@ -7,7 +7,9 @@ const LOG_PREFIX = 'Ticket:';
 async function ensureTicketEnvironment(client) {
   const guildId = process.env.GUILD_ID;
   if (!guildId) {
-    console.error(`${LOG_PREFIX} GUILD_ID is not defined. Ticket-System kann nicht initialisiert werden.`);
+    console.error(
+      `${LOG_PREFIX} GUILD_ID is not defined. Ticket-System kann nicht initialisiert werden.`,
+    );
     return;
   }
 
@@ -17,7 +19,10 @@ async function ensureTicketEnvironment(client) {
     try {
       guild = await client.guilds.fetch(guildId);
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to fetch guild ${guildId} for ticket setup:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to fetch guild ${guildId} for ticket setup:`,
+        error,
+      );
       return;
     }
   }

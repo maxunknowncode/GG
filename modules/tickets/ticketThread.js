@@ -5,7 +5,8 @@ const LOG_PREFIX = 'Ticket:';
 const THREAD_STATE_REGEX = /^\[(?<state>[^\]]+)]\s*/i;
 const THREAD_STATUS_EMOJI_REGEX = /^(?<emoji>🟢|🟡|🔴)\s*/;
 const THREAD_NAME_REGEX = /^(?<type>[a-z0-9-]+)-(?<number>\d{3,})$/i;
-const LEGACY_THREAD_NAME_REGEX = /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
+const LEGACY_THREAD_NAME_REGEX =
+  /^(?<channel>[a-z0-9-]+)-(?<number>\d+)-u(?<userId>\d{17,})$/i;
 
 const THREAD_STATUS_EMOJIS = {
   OPEN: '🟢',
@@ -25,7 +26,9 @@ function extractThreadState(name = '') {
   const emojiMatch = name.match(THREAD_STATUS_EMOJI_REGEX);
   if (emojiMatch?.groups?.emoji) {
     const emoji = emojiMatch.groups.emoji;
-    const stateEntry = Object.entries(THREAD_STATUS_EMOJIS).find(([, value]) => value === emoji);
+    const stateEntry = Object.entries(THREAD_STATUS_EMOJIS).find(
+      ([, value]) => value === emoji,
+    );
     if (stateEntry) {
       return stateEntry[0];
     }
@@ -36,7 +39,10 @@ function extractThreadState(name = '') {
 }
 
 function extractBaseThreadName(name = '') {
-  return name.replace(THREAD_STATUS_EMOJI_REGEX, '').replace(THREAD_STATE_REGEX, '').trim();
+  return name
+    .replace(THREAD_STATUS_EMOJI_REGEX, '')
+    .replace(THREAD_STATE_REGEX, '')
+    .trim();
 }
 
 function parseThreadName(name = '') {
@@ -114,7 +120,8 @@ function buildThreadNameWithEmoji(currentName, emoji, fallbackBaseName) {
     return currentName.replace(THREAD_STATUS_EMOJI_REGEX, `${emoji} `).trim();
   }
 
-  const cleanedName = extractBaseThreadName(currentName) || fallbackBaseName || 'ticket';
+  const cleanedName =
+    extractBaseThreadName(currentName) || fallbackBaseName || 'ticket';
   return `${emoji} ${cleanedName}`.trim();
 }
 
@@ -135,14 +142,20 @@ async function computeChannelMaxTicketNumber(channel) {
       }
     });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to fetch active threads for ${channel.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to fetch active threads for ${channel.id}:`,
+      error,
+    );
   }
 
   let before;
   let hasMore = true;
   while (hasMore) {
     try {
-      const archived = await channel.threads.fetchArchived({ type: 'private', before });
+      const archived = await channel.threads.fetchArchived({
+        type: 'private',
+        before,
+      });
       archived.threads.forEach((thread) => {
         const parsed = parseThreadName(thread.name);
         if (parsed?.ticketNumber && parsed.ticketNumber > highest) {
@@ -153,7 +166,10 @@ async function computeChannelMaxTicketNumber(channel) {
       hasMore = archived.hasMore;
       before = archived.threads.last()?.id;
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to fetch archived threads for ${channel.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to fetch archived threads for ${channel.id}:`,
+        error,
+      );
       break;
     }
 
@@ -180,11 +196,16 @@ async function initializeTicketCounter(guild) {
   try {
     await guild.channels.fetch();
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to fetch guild channels while initializing ticket counter:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to fetch guild channels while initializing ticket counter:`,
+      error,
+    );
   }
 
   const channels = guild.channels.cache.filter(
-    (channel) => channel.parentId === tickets.openCategoryId && channel.type === ChannelType.GuildText,
+    (channel) =>
+      channel.parentId === tickets.openCategoryId &&
+      channel.type === ChannelType.GuildText,
   );
 
   const channelIds = Array.from(channels.keys());
@@ -237,12 +258,15 @@ async function ensureTicketChannel(guild, option) {
   if (!channel) {
     channel = guild.channels.cache.find(
       (existingChannel) =>
-        existingChannel.type === ChannelType.GuildText && existingChannel.name === option.channelName,
+        existingChannel.type === ChannelType.GuildText &&
+        existingChannel.name === option.channelName,
     );
   }
 
   if (!channel || channel.type !== ChannelType.GuildText) {
-    throw new Error(`Ticket channel for ${option.key} could not be located or is not a text channel.`);
+    throw new Error(
+      `Ticket channel for ${option.key} could not be located or is not a text channel.`,
+    );
   }
 
   return channel;
@@ -251,7 +275,8 @@ async function ensureTicketChannel(guild, option) {
 async function createTicketThread(channel, option, ticketNumber, creator) {
   const rawTypeKey = option?.key ?? option?.channelName ?? 'ticket';
   const sanitizedTypeKey = rawTypeKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const normalizedTypeKey = sanitizedTypeKey.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'ticket';
+  const normalizedTypeKey =
+    sanitizedTypeKey.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'ticket';
   const baseName = formatBaseThreadName(normalizedTypeKey, ticketNumber);
   const threadName = withThreadState(baseName, 'OPEN');
 
@@ -269,14 +294,20 @@ async function createTicketThread(channel, option, ticketNumber, creator) {
     try {
       await thread.members.add(creator.id);
     } catch (memberError) {
-      console.error(`${LOG_PREFIX} Failed to add creator ${creator.id} to thread ${thread.id}:`, memberError);
+      console.error(
+        `${LOG_PREFIX} Failed to add creator ${creator.id} to thread ${thread.id}:`,
+        memberError,
+      );
     }
 
     ticketCreators.set(thread.id, creator.id);
 
     return { thread, baseName };
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to create ticket thread in ${channel.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to create ticket thread in ${channel.id}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -311,7 +342,9 @@ async function getTicketCreatorId(thread) {
 
   try {
     const starterMessage = await thread.fetchStarterMessage();
-    const starterContentId = extractUserIdFromString(starterMessage?.content ?? '');
+    const starterContentId = extractUserIdFromString(
+      starterMessage?.content ?? '',
+    );
     if (starterContentId) {
       ticketCreators.set(thread.id, starterContentId);
       return starterContentId;
@@ -326,7 +359,10 @@ async function getTicketCreatorId(thread) {
     }
   } catch (error) {
     if (error?.code !== 10008) {
-      console.error(`${LOG_PREFIX} Failed to fetch starter message for thread ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to fetch starter message for thread ${thread.id}:`,
+        error,
+      );
     }
   }
 
@@ -340,7 +376,9 @@ async function getTicketCreatorId(thread) {
         break;
       }
 
-      const sortedMessages = [...messages.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+      const sortedMessages = [...messages.values()].sort(
+        (a, b) => a.createdTimestamp - b.createdTimestamp,
+      );
 
       for (const message of sortedMessages) {
         const contentId = extractUserIdFromString(message?.content ?? '');
@@ -368,7 +406,10 @@ async function getTicketCreatorId(thread) {
       }
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to fetch messages for thread ${thread.id} to determine creator:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to fetch messages for thread ${thread.id} to determine creator:`,
+      error,
+    );
   }
 
   return null;

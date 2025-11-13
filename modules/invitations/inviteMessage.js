@@ -39,11 +39,15 @@ function buildInvitationComponents() {
 
 async function ensureInvitationMessage(client) {
   if (!client) {
-    throw new Error('Discord client instance is required to ensure the invitation message.');
+    throw new Error(
+      'Discord client instance is required to ensure the invitation message.',
+    );
   }
 
   if (!einladungen) {
-    console.warn(`${LOG_PREFIX} Einladungs-Konfiguration fehlt in config/ids.js.`);
+    console.warn(
+      `${LOG_PREFIX} Einladungs-Konfiguration fehlt in config/ids.js.`,
+    );
     return null;
   }
 
@@ -62,13 +66,18 @@ async function ensureInvitationMessage(client) {
     try {
       channel = await client.channels.fetch(channelId);
     } catch (error) {
-      console.warn(`${LOG_PREFIX} Einladungs-Channel ${channelId} konnte nicht abgerufen werden:`, error);
+      console.warn(
+        `${LOG_PREFIX} Einladungs-Channel ${channelId} konnte nicht abgerufen werden:`,
+        error,
+      );
       return null;
     }
   }
 
   if (!channel?.isTextBased?.() || typeof channel.send !== 'function') {
-    console.warn(`${LOG_PREFIX} Einladungs-Channel ${channelId} unterstützt keine Textnachrichten.`);
+    console.warn(
+      `${LOG_PREFIX} Einladungs-Channel ${channelId} unterstützt keine Textnachrichten.`,
+    );
     return null;
   }
 
@@ -78,11 +87,17 @@ async function ensureInvitationMessage(client) {
   if (messageId) {
     try {
       const existingMessage = await channel.messages.fetch(messageId);
-      const updatedMessage = await existingMessage.edit({ embeds: [embed], components });
-      console.info(`${LOG_PREFIX} Einladungs-Nachricht ${messageId} wurde aktualisiert.`);
+      const updatedMessage = await existingMessage.edit({
+        embeds: [embed],
+        components,
+      });
+      console.info(
+        `${LOG_PREFIX} Einladungs-Nachricht ${messageId} wurde aktualisiert.`,
+      );
       return updatedMessage;
     } catch (error) {
-      const isUnknownMessage = error?.code === 10008 || /Unknown Message/i.test(error?.message ?? '');
+      const isUnknownMessage =
+        error?.code === 10008 || /Unknown Message/i.test(error?.message ?? '');
 
       if (!isUnknownMessage) {
         console.error(
@@ -105,7 +120,10 @@ async function ensureInvitationMessage(client) {
     );
     return createdMessage;
   } catch (error) {
-    console.error(`${LOG_PREFIX} Senden der Einladungs-Nachricht fehlgeschlagen:`, error);
+    console.error(
+      `${LOG_PREFIX} Senden der Einladungs-Nachricht fehlgeschlagen:`,
+      error,
+    );
     return null;
   }
 }
