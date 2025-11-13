@@ -45,7 +45,7 @@ async function ensureInvitationMessage(client) {
     return null;
   }
 
-  const { channel: channelId, messageId, inviteLink } = einladungen;
+  const { channelId, messageId, inviteLink } = einladungen;
 
   if (!channelId) {
     console.warn('Einladungs-Channel-ID fehlt in config/ids.js.');

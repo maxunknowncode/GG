@@ -159,7 +159,11 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
     throw new Error('Die Regelwerk-Konfiguration fehlt in config/ids.js.');
   }
 
-  const { category: regelwerkCategoryId, channel: regelwerkChannelId, messageId: regelwerkMessageId } = regelwerk;
+  const {
+    categoryId: regelwerkCategoryId,
+    channelId: regelwerkChannelId,
+    messageId: regelwerkMessageId,
+  } = regelwerk;
 
   if (!replaceExisting) {
     console.info('Regelwerk-Versand übersprungen, da replaceExisting deaktiviert ist.');

@@ -166,7 +166,7 @@ async function handleTicketClaim(interaction) {
   }
 
   const member = interaction.member;
-  const teamRoleId = roles?.team;
+  const teamRoleId = roles?.teamRoleId;
   const hasTeamRole = Boolean(teamRoleId && member?.roles?.cache?.has(teamRoleId));
 
   if (!hasTeamRole) {
@@ -258,7 +258,7 @@ async function handleTicketClose(interaction) {
   }
 
   const member = interaction.member;
-  const teamRoleId = roles?.team;
+  const teamRoleId = roles?.teamRoleId;
   const hasTeamRole = Boolean(teamRoleId && member?.roles?.cache?.has(teamRoleId));
   const creatorId = await getTicketCreatorId(thread);
   const isCreator = Boolean(creatorId && interaction.user.id === creatorId);

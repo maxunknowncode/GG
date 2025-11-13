@@ -63,9 +63,9 @@ function setupRegelwerkModule(client) {
         return;
       }
 
-      const memberRoleId = roles?.member;
+      const memberRoleId = roles?.memberRoleId;
       if (!memberRoleId) {
-        console.error('Regelwerk: roles.member ist in config/ids.js nicht gesetzt.');
+        console.error('Regelwerk: roles.memberRoleId ist in config/ids.js nicht gesetzt.');
         const embed = buildEmbed({
           color: 0xe74c3c,
           title: '❌ Verifizierung fehlgeschlagen',

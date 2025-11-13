@@ -33,13 +33,13 @@ function buildWelcomeEmbed(memberId) {
 }
 
 async function sendWelcomeMessage(member) {
-  if (!welcome?.channel) {
+  if (!welcome?.channelId) {
     console.error('Willkommens-Channel-ID ist nicht konfiguriert.');
     return;
   }
 
   try {
-    const channel = await member.client.channels.fetch(welcome.channel);
+    const channel = await member.client.channels.fetch(welcome.channelId);
     if (!channel || !channel.isTextBased()) {
       console.error('Der konfigurierte Willkommens-Channel konnte nicht gefunden oder ist nicht textbasiert.');
       return;
