@@ -27,7 +27,9 @@ const LOG_PREFIX = 'Ticket:';
 function buildClaimEmbed(userId) {
   return new EmbedBuilder()
     .setTitle('🟡 Ticket übernommen')
-    .setDescription(`Das Ticket wurde vom Teammitglied <@${userId}> übernommen.`)
+    .setDescription(
+      `Das Ticket wurde vom Teammitglied <@${userId}> übernommen.`,
+    )
     .setColor(CLAIM_EMBED_COLOR)
     .setTimestamp();
 }
@@ -58,7 +60,9 @@ function buildTicketEmbed(option, userId, ticketNumber) {
         'Teammitglieder können das Ticket mit **„Claim Ticket“** übernehmen.',
       ].join('\n'),
     )
-    .setFooter({ text: 'Nur der Ticket-Ersteller und das Team sehen dieses Ticket.' })
+    .setFooter({
+      text: 'Nur der Ticket-Ersteller und das Team sehen dieses Ticket.',
+    })
     .setTimestamp();
 }
 
@@ -99,7 +103,8 @@ function rebuildActionRowsWithDisabledClaim(message) {
           return;
         }
 
-        const disabledClaimButton = ButtonBuilder.from(component).setDisabled(true);
+        const disabledClaimButton =
+          ButtonBuilder.from(component).setDisabled(true);
         newRow.addComponents(disabledClaimButton);
       });
 
@@ -107,7 +112,10 @@ function rebuildActionRowsWithDisabledClaim(message) {
         rows.push(newRow);
       }
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to rebuild action row for ticket message ${message.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to rebuild action row for ticket message ${message.id}:`,
+        error,
+      );
     }
 
     return rows;
@@ -126,7 +134,10 @@ async function handleTicketSelection(interaction) {
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket creation outside guild:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket creation outside guild:`,
+        error,
+      );
     }
     return;
   }
@@ -139,7 +150,10 @@ async function handleTicketSelection(interaction) {
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for missing ticket selection value:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for missing ticket selection value:`,
+        error,
+      );
     }
     return;
   }
@@ -152,7 +166,10 @@ async function handleTicketSelection(interaction) {
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for invalid ticket option ${selectedValue}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for invalid ticket option ${selectedValue}:`,
+        error,
+      );
     }
     return;
   }
@@ -160,7 +177,10 @@ async function handleTicketSelection(interaction) {
   try {
     await interaction.deferReply({ ephemeral: true });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to defer ticket selection reply:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to defer ticket selection reply:`,
+      error,
+    );
   }
 
   const guild = interaction.guild;
@@ -168,7 +188,10 @@ async function handleTicketSelection(interaction) {
   try {
     await initializeTicketCounter(guild);
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to initialize ticket counter during ticket creation:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to initialize ticket counter during ticket creation:`,
+      error,
+    );
   }
 
   let channel;
@@ -187,10 +210,16 @@ async function handleTicketSelection(interaction) {
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply({ content: configErrorMessage });
       } else {
-        await interaction.reply({ content: configErrorMessage, ephemeral: true });
+        await interaction.reply({
+          content: configErrorMessage,
+          ephemeral: true,
+        });
       }
     } catch (replyError) {
-      console.error(`${LOG_PREFIX} Failed to send ticket configuration error response:`, replyError);
+      console.error(
+        `${LOG_PREFIX} Failed to send ticket configuration error response:`,
+        replyError,
+      );
     }
 
     return;
@@ -199,7 +228,12 @@ async function handleTicketSelection(interaction) {
   const ticketNumber = getNextTicketNumber();
 
   try {
-    const { thread } = await createTicketThread(channel, option, ticketNumber, interaction.user);
+    const { thread } = await createTicketThread(
+      channel,
+      option,
+      ticketNumber,
+      interaction.user,
+    );
     const embed = buildTicketEmbed(option, interaction.user.id, ticketNumber);
     const components = buildTicketActionRow();
 
@@ -210,7 +244,10 @@ async function handleTicketSelection(interaction) {
         allowedMentions: { users: [interaction.user.id] },
       });
     } catch (threadSendError) {
-      console.error(`${LOG_PREFIX} Failed to send initial ticket message in thread ${thread.id}:`, threadSendError);
+      console.error(
+        `${LOG_PREFIX} Failed to send initial ticket message in thread ${thread.id}:`,
+        threadSendError,
+      );
     }
 
     const responseContent = `Dein Ticket wurde erstellt: ${thread}`;
@@ -221,10 +258,16 @@ async function handleTicketSelection(interaction) {
         await interaction.reply({ content: responseContent, ephemeral: true });
       }
     } catch (replyError) {
-      console.error(`${LOG_PREFIX} Failed to confirm ticket creation for thread ${thread.id}:`, replyError);
+      console.error(
+        `${LOG_PREFIX} Failed to confirm ticket creation for thread ${thread.id}:`,
+        replyError,
+      );
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to create ticket thread in channel ${channel?.id ?? 'unknown'}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to create ticket thread in channel ${channel?.id ?? 'unknown'}:`,
+      error,
+    );
 
     const errorMessage =
       'Beim Erstellen deines Tickets ist ein Fehler aufgetreten. Bitte versuche es später erneut.';
@@ -236,7 +279,10 @@ async function handleTicketSelection(interaction) {
         await interaction.reply({ content: errorMessage, ephemeral: true });
       }
     } catch (replyError) {
-      console.error(`${LOG_PREFIX} Failed to send ticket creation error response:`, replyError);
+      console.error(
+        `${LOG_PREFIX} Failed to send ticket creation error response:`,
+        replyError,
+      );
     }
   }
 }
@@ -248,22 +294,36 @@ async function handleTicketClaim(interaction) {
 
   if (!interaction.inGuild()) {
     try {
-      await interaction.reply({ content: 'Diese Aktion ist hier nicht verfügbar.', ephemeral: true });
+      await interaction.reply({
+        content: 'Diese Aktion ist hier nicht verfügbar.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket claim outside guild:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket claim outside guild:`,
+        error,
+      );
     }
     return;
   }
 
   const member = interaction.member;
   const teamRoleId = roles?.teamRoleId;
-  const hasTeamRole = Boolean(teamRoleId && member?.roles?.cache?.has(teamRoleId));
+  const hasTeamRole = Boolean(
+    teamRoleId && member?.roles?.cache?.has(teamRoleId),
+  );
 
   if (!hasTeamRole) {
     try {
-      await interaction.reply({ content: 'Nur Teammitglieder können Tickets claimen.', ephemeral: true });
+      await interaction.reply({
+        content: 'Nur Teammitglieder können Tickets claimen.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket claim without permission:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket claim without permission:`,
+        error,
+      );
     }
     return;
   }
@@ -276,16 +336,25 @@ async function handleTicketClaim(interaction) {
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket claim outside thread:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket claim outside thread:`,
+        error,
+      );
     }
     return;
   }
 
   if (isThreadClaimed(thread.name)) {
     try {
-      await interaction.reply({ content: 'Dieses Ticket wurde bereits übernommen.', ephemeral: true });
+      await interaction.reply({
+        content: 'Dieses Ticket wurde bereits übernommen.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for already claimed ticket ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for already claimed ticket ${thread.id}:`,
+        error,
+      );
     }
     return;
   }
@@ -294,11 +363,15 @@ async function handleTicketClaim(interaction) {
   if (!parsed) {
     try {
       await interaction.reply({
-        content: 'Dieses Ticket kann nicht geclaimt werden, da Metadaten fehlen.',
+        content:
+          'Dieses Ticket kann nicht geclaimt werden, da Metadaten fehlen.',
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket claim with missing metadata in ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket claim with missing metadata in ${thread.id}:`,
+        error,
+      );
     }
     return;
   }
@@ -306,27 +379,47 @@ async function handleTicketClaim(interaction) {
   try {
     await interaction.deferUpdate();
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to defer update for ticket claim:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to defer update for ticket claim:`,
+      error,
+    );
     try {
-      await interaction.reply({ content: 'Aktion konnte nicht verarbeitet werden.', ephemeral: true });
+      await interaction.reply({
+        content: 'Aktion konnte nicht verarbeitet werden.',
+        ephemeral: true,
+      });
     } catch (replyError) {
-      console.error(`${LOG_PREFIX} Failed to send fallback reply for ticket claim:`, replyError);
+      console.error(
+        `${LOG_PREFIX} Failed to send fallback reply for ticket claim:`,
+        replyError,
+      );
     }
     return;
   }
 
   try {
-    const updatedName = withThreadState(parsed.baseName || thread.name, 'CLAIMED');
+    const updatedName = withThreadState(
+      parsed.baseName || thread.name,
+      'CLAIMED',
+    );
     await thread.setName(updatedName);
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to rename thread ${thread.id} while claiming:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to rename thread ${thread.id} while claiming:`,
+      error,
+    );
   }
 
   try {
-    const updatedComponents = rebuildActionRowsWithDisabledClaim(interaction.message);
+    const updatedComponents = rebuildActionRowsWithDisabledClaim(
+      interaction.message,
+    );
     await interaction.message.edit({ components: updatedComponents });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to disable claim button in thread ${thread.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to disable claim button in thread ${thread.id}:`,
+      error,
+    );
   }
 
   const claimEmbed = buildClaimEmbed(interaction.user.id);
@@ -337,7 +430,10 @@ async function handleTicketClaim(interaction) {
       allowedMentions: { users: [interaction.user.id] },
     });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to send claim confirmation in thread ${thread.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to send claim confirmation in thread ${thread.id}:`,
+      error,
+    );
   }
 }
 
@@ -348,9 +444,15 @@ async function handleTicketClose(interaction) {
 
   if (!interaction.inGuild()) {
     try {
-      await interaction.reply({ content: 'Diese Aktion ist hier nicht verfügbar.', ephemeral: true });
+      await interaction.reply({
+        content: 'Diese Aktion ist hier nicht verfügbar.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket close outside guild:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket close outside guild:`,
+        error,
+      );
     }
     return;
   }
@@ -363,7 +465,10 @@ async function handleTicketClose(interaction) {
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket close outside thread:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket close outside thread:`,
+        error,
+      );
     }
     return;
   }
@@ -371,36 +476,54 @@ async function handleTicketClose(interaction) {
   const parsed = parseThreadName(thread.name);
   if (!parsed) {
     try {
-      await interaction.reply({ content: 'Ticketdaten konnten nicht gelesen werden.', ephemeral: true });
+      await interaction.reply({
+        content: 'Ticketdaten konnten nicht gelesen werden.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket close with missing metadata in ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket close with missing metadata in ${thread.id}:`,
+        error,
+      );
     }
     return;
   }
 
   const member = interaction.member;
   const teamRoleId = roles?.teamRoleId;
-  const hasTeamRole = Boolean(teamRoleId && member?.roles?.cache?.has(teamRoleId));
+  const hasTeamRole = Boolean(
+    teamRoleId && member?.roles?.cache?.has(teamRoleId),
+  );
   const creatorId = await getTicketCreatorId(thread);
   const isCreator = Boolean(creatorId && interaction.user.id === creatorId);
 
   if (!hasTeamRole && !isCreator) {
     try {
       await interaction.reply({
-        content: 'Nur der Ticket-Ersteller oder das Team können dieses Ticket schließen.',
+        content:
+          'Nur der Ticket-Ersteller oder das Team können dieses Ticket schließen.',
         ephemeral: true,
       });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for ticket close without permission in ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for ticket close without permission in ${thread.id}:`,
+        error,
+      );
     }
     return;
   }
 
   if (isThreadClosed(thread.name)) {
     try {
-      await interaction.reply({ content: 'Dieses Ticket ist bereits geschlossen.', ephemeral: true });
+      await interaction.reply({
+        content: 'Dieses Ticket ist bereits geschlossen.',
+        ephemeral: true,
+      });
     } catch (error) {
-      console.error(`${LOG_PREFIX} Failed to reply for already closed ticket ${thread.id}:`, error);
+      console.error(
+        `${LOG_PREFIX} Failed to reply for already closed ticket ${thread.id}:`,
+        error,
+      );
     }
     return;
   }
@@ -408,7 +531,10 @@ async function handleTicketClose(interaction) {
   try {
     await interaction.deferReply({ ephemeral: true });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to defer reply for ticket close:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to defer reply for ticket close:`,
+      error,
+    );
   }
 
   if (creatorId) {
@@ -427,10 +553,16 @@ async function handleTicketClose(interaction) {
   clearTicketCreator(thread.id);
 
   try {
-    const closedName = withThreadState(parsed.baseName || thread.name, 'CLOSED');
+    const closedName = withThreadState(
+      parsed.baseName || thread.name,
+      'CLOSED',
+    );
     await thread.setName(closedName);
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to rename thread ${thread.id} on close:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to rename thread ${thread.id} on close:`,
+      error,
+    );
   }
 
   const closeEmbed = buildCloseEmbed();
@@ -438,7 +570,10 @@ async function handleTicketClose(interaction) {
   try {
     await thread.send({ embeds: [closeEmbed] });
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to send ticket close notification in thread ${thread.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to send ticket close notification in thread ${thread.id}:`,
+      error,
+    );
   }
 
   try {
@@ -450,18 +585,28 @@ async function handleTicketClose(interaction) {
   try {
     await thread.setArchived(true, 'Ticket geschlossen');
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to archive thread ${thread.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to archive thread ${thread.id}:`,
+      error,
+    );
   }
 
-  const confirmationMessage = 'Ticket wurde geschlossen. Der Ersteller hat keinen Zugriff mehr.';
+  const confirmationMessage =
+    'Ticket wurde geschlossen. Der Ersteller hat keinen Zugriff mehr.';
   try {
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply({ content: confirmationMessage });
     } else {
-      await interaction.reply({ content: confirmationMessage, ephemeral: true });
+      await interaction.reply({
+        content: confirmationMessage,
+        ephemeral: true,
+      });
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to send confirmation for closed ticket ${thread.id}:`, error);
+    console.error(
+      `${LOG_PREFIX} Failed to send confirmation for closed ticket ${thread.id}:`,
+      error,
+    );
   }
 }
 
@@ -471,7 +616,9 @@ function registerTicketInteractions(client) {
   }
 
   if (!client) {
-    throw new Error('Discord client instance is required to register ticket interactions.');
+    throw new Error(
+      'Discord client instance is required to register ticket interactions.',
+    );
   }
 
   if (
@@ -489,7 +636,10 @@ function registerTicketInteractions(client) {
 
   client.on('interactionCreate', async (interaction) => {
     try {
-      if (interaction.isStringSelectMenu() && interaction.customId === tickets.selectCustomId) {
+      if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId === tickets.selectCustomId
+      ) {
         await handleTicketSelection(interaction);
         return;
       }
@@ -505,16 +655,27 @@ function registerTicketInteractions(client) {
         }
       }
     } catch (error) {
-      console.error(`${LOG_PREFIX} Unhandled error in ticket interaction handler:`, error);
+      console.error(
+        `${LOG_PREFIX} Unhandled error in ticket interaction handler:`,
+        error,
+      );
 
-      if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+      if (
+        interaction.isRepliable() &&
+        !interaction.replied &&
+        !interaction.deferred
+      ) {
         try {
           await interaction.reply({
-            content: 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuche es erneut.',
+            content:
+              'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuche es erneut.',
             ephemeral: true,
           });
         } catch (replyError) {
-          console.error(`${LOG_PREFIX} Failed to reply after ticket interaction error:`, replyError);
+          console.error(
+            `${LOG_PREFIX} Failed to reply after ticket interaction error:`,
+            replyError,
+          );
         }
       }
     }
