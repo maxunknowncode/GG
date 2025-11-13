@@ -6,6 +6,8 @@ const {
 } = require('discord.js');
 const { tickets } = require('../../config/ids');
 
+const LOG_PREFIX = 'Ticket:';
+
 function buildTicketPanelEmbed() {
   return new EmbedBuilder()
     .setTitle('🎟️ Ticket-Center')
@@ -21,6 +23,10 @@ function buildTicketPanelEmbed() {
 }
 
 function buildTicketPanelComponents() {
+  if (!tickets?.selectCustomId || !Array.isArray(tickets?.options) || tickets.options.length === 0) {
+    throw new Error('Ticket: Ticket panel configuration is incomplete.');
+  }
+
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId(tickets.selectCustomId)
     .setPlaceholder('Wähle eine Ticket-Kategorie')
@@ -41,8 +47,18 @@ function buildTicketPanelComponents() {
 }
 
 async function ensureTicketPanel(client) {
-  if (!tickets?.panelChannelId) {
-    console.error('Ticket panel channel ID is missing in the configuration.');
+  if (!tickets) {
+    console.error(`${LOG_PREFIX} Ticket-Konfiguration fehlt in config/ids.js.`);
+    return null;
+  }
+
+  if (!Array.isArray(tickets.options) || tickets.options.length === 0) {
+    console.error(`${LOG_PREFIX} Ticket-Optionen sind nicht konfiguriert.`);
+    return null;
+  }
+
+  if (!tickets.panelChannelId) {
+    console.error(`${LOG_PREFIX} Ticket panel channel ID is missing in the configuration.`);
     return null;
   }
 
@@ -53,24 +69,31 @@ async function ensureTicketPanel(client) {
     try {
       channel = await client.channels.fetch(channelId);
     } catch (error) {
-      console.error(`Failed to fetch ticket panel channel ${channelId}:`, error);
+      console.error(`${LOG_PREFIX} Failed to fetch ticket panel channel ${channelId}:`, error);
       return null;
     }
   }
 
   if (!channel?.isTextBased?.()) {
-    console.error(`Configured ticket panel channel ${channelId} is not text-based.`);
+    console.error(`${LOG_PREFIX} Configured ticket panel channel ${channelId} is not text-based.`);
     return null;
   }
 
   if (tickets.panelCategoryId && channel.parentId !== tickets.panelCategoryId) {
     console.warn(
-      `Ticket panel channel ${channelId} is not located in the expected category ${tickets.panelCategoryId}.`,
+      `${LOG_PREFIX} Ticket panel channel ${channelId} is not located in the expected category ${tickets.panelCategoryId}.`,
     );
   }
 
   const embed = buildTicketPanelEmbed();
-  const components = buildTicketPanelComponents();
+  let components;
+
+  try {
+    components = buildTicketPanelComponents();
+  } catch (componentError) {
+    console.error(`${LOG_PREFIX} ${componentError.message}`);
+    return null;
+  }
 
   try {
     const fetchedMessages = await channel.messages.fetch({ limit: 50 });
@@ -85,20 +108,29 @@ async function ensureTicketPanel(client) {
     });
 
     if (panelMessages.size === 0) {
-      const sentMessage = await channel.send({
-        embeds: [embed],
-        components,
-        allowedMentions: { parse: [] },
-      });
+      try {
+        const sentMessage = await channel.send({
+          embeds: [embed],
+          components,
+          allowedMentions: { parse: [] },
+        });
 
-      return sentMessage;
+        return sentMessage;
+      } catch (sendError) {
+        console.error(`${LOG_PREFIX} Failed to send ticket panel message in ${channelId}:`, sendError);
+        return null;
+      }
     }
 
     const sorted = panelMessages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
     const keepMessage = sorted.last() ?? panelMessages.first();
 
     if (keepMessage) {
-      await keepMessage.edit({ embeds: [embed], components, allowedMentions: { parse: [] } });
+      try {
+        await keepMessage.edit({ embeds: [embed], components, allowedMentions: { parse: [] } });
+      } catch (editError) {
+        console.error(`${LOG_PREFIX} Failed to edit ticket panel message ${keepMessage.id}:`, editError);
+      }
     }
 
     for (const [messageId, message] of panelMessages) {
@@ -109,13 +141,13 @@ async function ensureTicketPanel(client) {
       try {
         await message.delete();
       } catch (error) {
-        console.error(`Failed to delete outdated ticket panel message ${messageId}:`, error);
+        console.error(`${LOG_PREFIX} Failed to delete outdated ticket panel message ${messageId}:`, error);
       }
     }
 
     return keepMessage;
   } catch (error) {
-    console.error('Failed to ensure ticket panel message:', error);
+    console.error(`${LOG_PREFIX} Failed to ensure ticket panel message:`, error);
     return null;
   }
 }

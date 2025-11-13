@@ -6,6 +6,8 @@ const {
 } = require('discord.js');
 const { einladungen } = require('../../config/ids');
 
+const LOG_PREFIX = 'Invites:';
+
 const INVITE_EMBED_COLOR = 0x5865f2;
 const COPY_BUTTON_CUSTOM_ID = 'copy_invite';
 
@@ -41,14 +43,14 @@ async function ensureInvitationMessage(client) {
   }
 
   if (!einladungen) {
-    console.warn('Einladungs-Konfiguration fehlt in config/ids.js.');
+    console.warn(`${LOG_PREFIX} Einladungs-Konfiguration fehlt in config/ids.js.`);
     return null;
   }
 
   const { channelId, messageId, inviteLink } = einladungen;
 
   if (!channelId) {
-    console.warn('Einladungs-Channel-ID fehlt in config/ids.js.');
+    console.warn(`${LOG_PREFIX} Einladungs-Channel-ID fehlt in config/ids.js.`);
     return null;
   }
 
@@ -60,13 +62,13 @@ async function ensureInvitationMessage(client) {
     try {
       channel = await client.channels.fetch(channelId);
     } catch (error) {
-      console.warn(`Einladungs-Channel ${channelId} konnte nicht abgerufen werden:`, error);
+      console.warn(`${LOG_PREFIX} Einladungs-Channel ${channelId} konnte nicht abgerufen werden:`, error);
       return null;
     }
   }
 
   if (!channel?.isTextBased?.() || typeof channel.send !== 'function') {
-    console.warn(`Einladungs-Channel ${channelId} unterstützt keine Textnachrichten.`);
+    console.warn(`${LOG_PREFIX} Einladungs-Channel ${channelId} unterstützt keine Textnachrichten.`);
     return null;
   }
 
@@ -77,21 +79,21 @@ async function ensureInvitationMessage(client) {
     try {
       const existingMessage = await channel.messages.fetch(messageId);
       const updatedMessage = await existingMessage.edit({ embeds: [embed], components });
-      console.info(`Einladungs-Nachricht ${messageId} wurde aktualisiert.`);
+      console.info(`${LOG_PREFIX} Einladungs-Nachricht ${messageId} wurde aktualisiert.`);
       return updatedMessage;
     } catch (error) {
       const isUnknownMessage = error?.code === 10008 || /Unknown Message/i.test(error?.message ?? '');
 
       if (!isUnknownMessage) {
         console.error(
-          `Aktualisierung der Einladungs-Nachricht ${messageId} fehlgeschlagen:`,
+          `${LOG_PREFIX} Aktualisierung der Einladungs-Nachricht ${messageId} fehlgeschlagen:`,
           error,
         );
         return null;
       }
 
       console.warn(
-        `Einladungs-Nachricht ${messageId} wurde nicht gefunden. Es wird eine neue Nachricht erstellt – bitte die neue ID in config/ids.js hinterlegen.`,
+        `${LOG_PREFIX} Einladungs-Nachricht ${messageId} wurde nicht gefunden. Es wird eine neue Nachricht erstellt – bitte die neue ID in config/ids.js hinterlegen.`,
       );
     }
   }
@@ -99,11 +101,11 @@ async function ensureInvitationMessage(client) {
   try {
     const createdMessage = await channel.send({ embeds: [embed], components });
     console.info(
-      `Neue Einladungs-Nachricht im Channel ${channelId} erstellt. Bitte die Message-ID ${createdMessage.id} in config/ids.js hinterlegen.`,
+      `${LOG_PREFIX} Neue Einladungs-Nachricht im Channel ${channelId} erstellt. Bitte die Message-ID ${createdMessage.id} in config/ids.js hinterlegen.`,
     );
     return createdMessage;
   } catch (error) {
-    console.error('Senden der Einladungs-Nachricht fehlgeschlagen:', error);
+    console.error(`${LOG_PREFIX} Senden der Einladungs-Nachricht fehlgeschlagen:`, error);
     return null;
   }
 }

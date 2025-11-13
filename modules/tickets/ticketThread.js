@@ -1,5 +1,7 @@
 const { ChannelType } = require('discord.js');
 const { tickets } = require('../../config/ids');
+
+const LOG_PREFIX = 'Ticket:';
 const THREAD_STATE_REGEX = /^\[(?<state>[^\]]+)]\s*/i;
 const THREAD_STATUS_EMOJI_REGEX = /^(?<emoji>🟢|🟡|🔴)\s*/;
 const THREAD_NAME_REGEX = /^(?<type>[a-z0-9-]+)-(?<number>\d{3,})$/i;
@@ -133,7 +135,7 @@ async function computeChannelMaxTicketNumber(channel) {
       }
     });
   } catch (error) {
-    console.error(`Failed to fetch active threads for ${channel.id}:`, error);
+    console.error(`${LOG_PREFIX} Failed to fetch active threads for ${channel.id}:`, error);
   }
 
   let before;
@@ -151,7 +153,7 @@ async function computeChannelMaxTicketNumber(channel) {
       hasMore = archived.hasMore;
       before = archived.threads.last()?.id;
     } catch (error) {
-      console.error(`Failed to fetch archived threads for ${channel.id}:`, error);
+      console.error(`${LOG_PREFIX} Failed to fetch archived threads for ${channel.id}:`, error);
       break;
     }
 
@@ -178,7 +180,7 @@ async function initializeTicketCounter(guild) {
   try {
     await guild.channels.fetch();
   } catch (error) {
-    console.error('Failed to fetch guild channels while initializing ticket counter:', error);
+    console.error(`${LOG_PREFIX} Failed to fetch guild channels while initializing ticket counter:`, error);
   }
 
   const channels = guild.channels.cache.filter(
@@ -218,7 +220,7 @@ async function ensureTicketChannel(guild, option) {
         channel = (await guild.channels.fetch(option.channelId)) ?? null;
       } catch (error) {
         console.warn(
-          `Configured ticket channel ${option.channelId} for ${option.key} could not be fetched:`,
+          `${LOG_PREFIX} Configured ticket channel ${option.channelId} for ${option.key} could not be fetched:`,
           error,
         );
       }
@@ -227,7 +229,7 @@ async function ensureTicketChannel(guild, option) {
 
   if (channel && channel.type !== ChannelType.GuildText) {
     console.error(
-      `Configured ticket channel ${channel.id} for ${option.key} is not a text channel. A fallback channel will be used.`,
+      `${LOG_PREFIX} Configured ticket channel ${channel.id} for ${option.key} is not a text channel. A fallback channel will be used.`,
     );
     channel = null;
   }
@@ -267,14 +269,14 @@ async function createTicketThread(channel, option, ticketNumber, creator) {
     try {
       await thread.members.add(creator.id);
     } catch (memberError) {
-      console.error(`Failed to add creator ${creator.id} to thread ${thread.id}:`, memberError);
+      console.error(`${LOG_PREFIX} Failed to add creator ${creator.id} to thread ${thread.id}:`, memberError);
     }
 
     ticketCreators.set(thread.id, creator.id);
 
     return { thread, baseName };
   } catch (error) {
-    console.error(`Failed to create ticket thread in ${channel.id}:`, error);
+    console.error(`${LOG_PREFIX} Failed to create ticket thread in ${channel.id}:`, error);
     throw error;
   }
 }
@@ -324,7 +326,7 @@ async function getTicketCreatorId(thread) {
     }
   } catch (error) {
     if (error?.code !== 10008) {
-      console.error(`Failed to fetch starter message for thread ${thread.id}:`, error);
+      console.error(`${LOG_PREFIX} Failed to fetch starter message for thread ${thread.id}:`, error);
     }
   }
 
@@ -366,7 +368,7 @@ async function getTicketCreatorId(thread) {
       }
     }
   } catch (error) {
-    console.error(`Failed to fetch messages for thread ${thread.id} to determine creator:`, error);
+    console.error(`${LOG_PREFIX} Failed to fetch messages for thread ${thread.id} to determine creator:`, error);
   }
 
   return null;

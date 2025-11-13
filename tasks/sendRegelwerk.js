@@ -1,6 +1,8 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const { regelwerk } = require('../config/ids');
 
+const LOG_PREFIX = 'Regelwerk:';
+
 function getVerifyCustomId() {
   return regelwerk?.verifyCustomId ?? 'verify_user';
 }
@@ -47,7 +49,7 @@ function ensureVerifyComponents(existingComponents = []) {
     try {
       rowBuilder = ActionRowBuilder.from(row);
     } catch (error) {
-      console.error('Regelwerk: Bestehende Komponenten konnten nicht übernommen werden:', error);
+      console.error(`${LOG_PREFIX} Bestehende Komponenten konnten nicht übernommen werden:`, error);
       continue;
     }
 
@@ -156,7 +158,8 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
   }
 
   if (!regelwerk) {
-    throw new Error('Die Regelwerk-Konfiguration fehlt in config/ids.js.');
+    console.error(`${LOG_PREFIX} Die Regelwerk-Konfiguration fehlt in config/ids.js.`);
+    return null;
   }
 
   const {
@@ -166,34 +169,41 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
   } = regelwerk;
 
   if (!replaceExisting) {
-    console.info('Regelwerk-Versand übersprungen, da replaceExisting deaktiviert ist.');
+    console.info(`${LOG_PREFIX} Regelwerk-Versand übersprungen, da replaceExisting deaktiviert ist.`);
     return null;
   }
 
   if (!regelwerkMessageId) {
-    console.warn('Regelwerk-Versand übersprungen, da keine regelwerk.messageId konfiguriert ist.');
+    console.warn(`${LOG_PREFIX} Regelwerk-Versand übersprungen, da keine regelwerk.messageId konfiguriert ist.`);
     return null;
   }
 
   if (!regelwerkChannelId) {
-    throw new Error('Regelwerk-Channel-ID fehlt in config/ids.js.');
+    console.error(`${LOG_PREFIX} Regelwerk-Channel-ID fehlt in config/ids.js.`);
+    return null;
   }
-
-  const channel = client.channels.cache.get(regelwerkChannelId);
+  let channel = client.channels.cache.get(regelwerkChannelId) ?? null;
 
   if (!channel) {
-    throw new Error(
-      `Regelwerk-Channel mit der ID ${regelwerkChannelId} wurde im Cache nicht gefunden.`,
-    );
+    try {
+      channel = await client.channels.fetch(regelwerkChannelId);
+    } catch (error) {
+      console.error(
+        `${LOG_PREFIX} Regelwerk-Channel ${regelwerkChannelId} konnte nicht geladen werden:`,
+        error,
+      );
+      return null;
+    }
   }
 
-  if (!channel.isTextBased?.() || typeof channel.send !== 'function') {
-    throw new Error('Der gefundene Regelwerk-Channel unterstützt keine Textnachrichten.');
+  if (!channel?.isTextBased?.() || typeof channel.send !== 'function') {
+    console.error(`${LOG_PREFIX} Der gefundene Regelwerk-Channel unterstützt keine Textnachrichten.`);
+    return null;
   }
 
   if (channel.parentId && channel.parentId !== regelwerkCategoryId) {
     console.warn(
-      `Regelwerk-Channel ${regelwerkChannelId} befindet sich nicht in der erwarteten Kategorie ${regelwerkCategoryId}.`,
+      `${LOG_PREFIX} Regelwerk-Channel ${regelwerkChannelId} befindet sich nicht in der erwarteten Kategorie ${regelwerkCategoryId}.`,
     );
   }
 
@@ -213,25 +223,30 @@ async function sendRegelwerk(client, { replaceExisting = false } = {}) {
       embeds: existingEmbeds,
       components: existingComponents.length > 0 ? existingComponents : components,
     });
-    console.info(`Regelwerk-Nachricht ${regelwerkMessageId} wurde aktualisiert.`);
+    console.info(`${LOG_PREFIX} Regelwerk-Nachricht ${regelwerkMessageId} wurde aktualisiert.`);
     return updatedMessage;
   } catch (error) {
     const isUnknownMessage =
       error?.code === 10008 || /Unknown Message/i.test(error?.message ?? '');
 
     if (!isUnknownMessage) {
-      throw new Error(`Aktualisierung des Regelwerks fehlgeschlagen: ${error.message}`);
+      console.error(`${LOG_PREFIX} Aktualisierung des Regelwerks fehlgeschlagen:`, error);
+      return null;
     }
 
     console.warn(
-      `Regelwerk-Nachricht ${regelwerkMessageId} wurde nicht gefunden. Es wird eine neue Nachricht erstellt – bitte die neue ID in config/ids.js hinterlegen.`,
+      `${LOG_PREFIX} Regelwerk-Nachricht ${regelwerkMessageId} wurde nicht gefunden. Es wird eine neue Nachricht erstellt – bitte die neue ID in config/ids.js hinterlegen.`,
     );
 
     try {
       const createdMessage = await channel.send({ embeds: [embed], components });
+      console.info(
+        `${LOG_PREFIX} Neue Regelwerk-Nachricht im Channel ${regelwerkChannelId} erstellt. Bitte die Message-ID ${createdMessage.id} in config/ids.js hinterlegen.`,
+      );
       return createdMessage;
     } catch (sendError) {
-      throw new Error(`Senden des Regelwerks fehlgeschlagen: ${sendError.message}`);
+      console.error(`${LOG_PREFIX} Senden des Regelwerks fehlgeschlagen:`, sendError);
+      return null;
     }
   }
 }

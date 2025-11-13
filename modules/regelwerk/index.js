@@ -1,6 +1,8 @@
 const { EmbedBuilder } = require('discord.js');
 const { regelwerk, roles } = require('../../config/ids');
 
+const LOG_PREFIX = 'Regelwerk:';
+
 let interactionsRegistered = false;
 
 function getVerifyCustomId() {
@@ -28,10 +30,14 @@ async function sendEphemeralEmbed(interaction, embed) {
 
   const payload = { embeds: [embed], ephemeral: true };
 
-  if (interaction.replied || interaction.deferred) {
-    await interaction.followUp(payload);
-  } else {
-    await interaction.reply(payload);
+  try {
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp(payload);
+    } else {
+      await interaction.reply(payload);
+    }
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Failed to send embed response:`, error);
   }
 }
 
@@ -65,7 +71,7 @@ function setupRegelwerkModule(client) {
 
       const memberRoleId = roles?.memberRoleId;
       if (!memberRoleId) {
-        console.error('Regelwerk: roles.memberRoleId ist in config/ids.js nicht gesetzt.');
+        console.error(`${LOG_PREFIX} roles.memberRoleId ist in config/ids.js nicht gesetzt.`);
         const embed = buildEmbed({
           color: 0xe74c3c,
           title: '❌ Verifizierung fehlgeschlagen',
@@ -84,7 +90,7 @@ function setupRegelwerkModule(client) {
         try {
           member = await guild.members.fetch(interaction.user.id);
         } catch (fetchError) {
-          console.error('Regelwerk: Mitgliedsdaten konnten nicht geladen werden:', fetchError);
+          console.error(`${LOG_PREFIX} Mitgliedsdaten konnten nicht geladen werden:`, fetchError);
           const embed = buildEmbed({
             color: 0xe74c3c,
             title: '❌ Verifizierung fehlgeschlagen',
@@ -98,7 +104,7 @@ function setupRegelwerkModule(client) {
       }
 
       if (!member) {
-        console.warn('Regelwerk: Mitgliedsdaten nicht gefunden für Benutzer:', interaction.user?.id);
+        console.warn(`${LOG_PREFIX} Mitgliedsdaten nicht gefunden für Benutzer:`, interaction.user?.id);
         const embed = buildEmbed({
           color: 0xe74c3c,
           title: '❌ Verifizierung fehlgeschlagen',
@@ -124,7 +130,7 @@ function setupRegelwerkModule(client) {
       try {
         await member.roles.add(memberRoleId, 'Verified via Regelwerk button');
       } catch (roleError) {
-        console.error('Regelwerk: Rolle konnte nicht vergeben werden:', roleError);
+        console.error(`${LOG_PREFIX} Rolle konnte nicht vergeben werden:`, roleError);
         const embed = buildEmbed({
           color: 0xe74c3c,
           title: '❌ Verifizierung fehlgeschlagen',
@@ -146,7 +152,7 @@ function setupRegelwerkModule(client) {
 
       await sendEphemeralEmbed(interaction, successEmbed);
     } catch (error) {
-      console.error('Unhandled error in regelwerk interaction handler:', error);
+      console.error(`${LOG_PREFIX} Unhandled error in regelwerk interaction handler:`, error);
 
       if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
         try {
@@ -159,7 +165,7 @@ function setupRegelwerkModule(client) {
           });
           await interaction.reply({ embeds: [fallbackEmbed], ephemeral: true });
         } catch (replyError) {
-          console.error('Failed to reply after regelwerk interaction error:', replyError);
+          console.error(`${LOG_PREFIX} Failed to reply after regelwerk interaction error:`, replyError);
         }
       }
     }

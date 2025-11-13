@@ -32,6 +32,7 @@ setupRegelwerkModule(client);
 setupJoin2CreateModule(client);
 setupWelcomeModule(client);
 
+// Wartung 2024-05-16: Module für Tickets, Regelwerk, Einladungen, Welcome, Join2Create und Statistiken mit robusterer Fehlerbehandlung & Logging versehen.
 client.once('ready', async () => {
   console.log(`Eingeloggt als ${client.user.tag}`);
   startStatsUpdater(client);
