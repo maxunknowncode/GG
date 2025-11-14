@@ -100,7 +100,7 @@ function withThreadState(baseName, state = 'OPEN') {
 }
 
 function getThreadState(name = '') {
-  return extractThreadState(name);
+  return extractThreadState(name) ?? 'OPEN';
 }
 
 function isThreadClaimed(name = '') {

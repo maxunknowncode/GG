@@ -7,13 +7,14 @@ const {
 const { regelwerk } = require('../config/ids');
 
 const LOG_PREFIX = 'Regelwerk:';
+// [Setup] Tickets-Emojis, Regelwerk-Emoji und Paragraphen aktualisiert.
 
 function getVerifyCustomId() {
   return regelwerk?.verifyCustomId ?? 'verify_user';
 }
 
 function getVerifyEmoji() {
-  return regelwerk?.verifyEmoji ?? '<a:yes:1437026086683803679>';
+  return regelwerk?.verifyEmoji ?? null;
 }
 
 function buildVerifyButton() {
@@ -94,66 +95,78 @@ function ensureVerifyComponents(existingComponents = []) {
 }
 
 function buildRegelwerkEmbed() {
-  const fields = [
+  const paragraphs = [
     {
-      name: '__**1. Allgemeines Verhalten**__',
-      value: [
-        '> 🚫 Beleidigungen, Diskriminierung und toxisches Verhalten sind untersagt.',
-        '> ✅ Begegne allen Mitgliedern mit Respekt – unabhängig von Meinung, Herkunft oder Rolle.',
-      ].join('\n'),
+      title: '**§1 Allgemeines Verhalten**',
+      bullets: [
+        'Sei respektvoll gegenüber allen Mitgliedern.',
+        'Keine Belästigung, Drohungen oder toxisches Verhalten.',
+        'Befolge die Anweisungen des Teams.',
+      ],
     },
     {
-      name: '__**2. Sprache & Inhalte**__',
-      value: [
-        '> 🔞 NSFW-Inhalte, Gewaltverherrlichung oder illegales Material sind verboten.',
-        '> 🗣️ Vermeide Dauer-Capslock, Spam und übermäßigen Emoji-Gebrauch.',
-      ].join('\n'),
+      title: '**§2 Sprache & Inhalt**',
+      bullets: [
+        'Kein rassistischer, sexistischer, homophober oder anderer diskriminierender Inhalt.',
+        'Kein NS-/Extremismus-Content.',
+        'Keine Pornografie oder übermäßig explizite Inhalte.',
+      ],
     },
     {
-      name: '__**3. Werbung & Eigenpromotion**__',
-      value: [
-        '> 📢 Jegliche Werbung ohne ausdrückliche Genehmigung ist untersagt.',
-        '> 💡 Frag im Zweifel zuerst das Team, bevor du Links oder Eigenpromotion teilst.',
-      ].join('\n'),
+      title: '**§3 Voice-Chat**',
+      bullets: [
+        'Kein Schreien, Soundspammen oder Stören.',
+        'Musik und Medien nur in den dafür vorgesehenen Channels.',
+        'Nutze Push-to-Talk, wenn du in lauter Umgebung bist.',
+      ],
     },
     {
-      name: '__**4. Nicknamen & Profilbilder**__',
-      value: [
-        '> 👤 Anstößige oder provozierende Namen und Profilbilder sind nicht erlaubt.',
-        '> 🔤 Wähle einen gut lesbaren Nicknamen, der zum Server passt.',
-      ].join('\n'),
+      title: '**§4 Werbung & Einladungen**',
+      bullets: [
+        'Keine Fremdwerbung ohne explizite Erlaubnis der Serverleitung.',
+        'Keine massenhaften Discord-Invites per DM.',
+        'Eigene Inhalte nur in den dafür freigegebenen Channels.',
+      ],
     },
     {
-      name: '__**5. Voice-Verhalten**__',
-      value: [
-        '> 🎧 Vermeide Störgeräusche, Soundboards oder dauerhaft lautes Verhalten.',
-        '> 🎙️ Nutze Push-to-Talk, wenn Hintergrundgeräusche nicht vermieden werden können.',
-      ].join('\n'),
+      title: '**§5 Namen & Profilbilder**',
+      bullets: [
+        'Namen oder Profilbilder dürfen keine Beleidigungen, Extremismus oder NS-Symbole enthalten.',
+        'Keine Fake-Identitäten als Teammitglied.',
+      ],
     },
     {
-      name: '__**6. Teamrespekt**__',
-      value: [
-        '> 🛡️ Folge jederzeit den Anweisungen des Serverteams.',
-        '> 📩 Kläre Fragen oder Beschwerden sachlich über Tickets oder Direktnachrichten.',
-      ].join('\n'),
+      title: '**§6 Datenschutz & Privatsphäre**',
+      bullets: [
+        'Keine privaten Daten (Adresse, Telefonnummer, reale Namen Dritter) veröffentlichen.',
+        'Screenshots, DMs oder Gespräche von anderen nur mit deren Zustimmung teilen.',
+      ],
     },
     {
-      name: '__**7. Sanktionen**__',
-      value: [
-        '> ⚠️ Verstöße führen zu Verwarnungen, Timeouts oder Bans.',
-        '> 🔁 Wiederholte Verstöße können einen dauerhaften Ausschluss nach sich ziehen.',
-      ].join('\n'),
-    },
-    {
-      name: '__**Offizielle Richtlinien**__',
-      value: '> 🔗 https://discord.com/guidelines',
+      title: '**§7 Konsequenzen bei Verstößen**',
+      bullets: [
+        'Verwarnungen, Timeouts, Kicks oder Bans je nach Schwere des Verstoßes.',
+        'Wiederholte und schwere Verstöße können zu einem dauerhaften Ban führen.',
+      ],
     },
   ];
+
+  const description = paragraphs
+    .map((section) => {
+      const bulletList = section.bullets.map((entry) => `- ${entry}`).join('\n');
+      return `${section.title}\n${bulletList}`;
+    })
+    .join('\n\n');
 
   return new EmbedBuilder()
     .setColor(0x8b0000)
     .setTitle('📜 Serverregelwerk')
-    .setFields(fields)
+    .setDescription(description)
+    .addFields({
+      name: '**Wichtiger Hinweis**',
+      value:
+        'Zusätzlich zu diesen Serverregeln gelten jederzeit die offiziellen [Discord-Nutzungsbedingungen](https://discord.com/terms) und [Community-Richtlinien](https://discord.com/guidelines).',
+    })
     .setFooter({
       text: 'Durch die Nutzung dieses Servers akzeptierst du die Discord-Richtlinien.',
     })
