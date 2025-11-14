@@ -57,7 +57,7 @@ function buildTicketEmbed(option, userId, ticketNumber) {
         'Screenshots, IDs oder weitere Details helfen bei der Bearbeitung.',
         '',
         'Ein Teammitglied meldet sich hier schnellstmöglich.',
-        'Teammitglieder können das Ticket mit **„Claim Ticket“** übernehmen.',
+        'Teammitglieder können das Ticket mit **„Ticket claimen“** übernehmen.',
       ].join('\n'),
     )
     .setFooter({
@@ -71,13 +71,13 @@ function buildTicketActionRow({ claimed = false } = {}) {
     .setCustomId(tickets.closeCustomId)
     .setLabel('Ticket schließen')
     .setStyle(ButtonStyle.Danger)
-    .setEmoji('🗑️');
+    .setEmoji('🔴');
 
   const claimButton = new ButtonBuilder()
     .setCustomId(tickets.claimCustomId)
-    .setLabel('Claim Ticket')
+    .setLabel('Ticket claimen')
     .setStyle(ButtonStyle.Primary)
-    .setEmoji('🛡️')
+    .setEmoji('🟡')
     .setDisabled(Boolean(claimed));
 
   return [new ActionRowBuilder().addComponents(closeButton, claimButton)];
